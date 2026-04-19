@@ -6,8 +6,11 @@ st.set_page_config(page_title="SWR Split-Ticket Finder", layout="wide")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv('Mapped_Fares_Final.csv')
-    # Use errors='coerce' to handle any non-numeric data safely
+    # Pandas will automatically unzip the file 'fares.zip' 
+    # and find the CSV inside it!
+    df = pd.read_csv('fares.zip')
+    
+    # Keep your conversion logic here
     df['FARE'] = pd.to_numeric(df['FARE'], errors='coerce') / 100
     return df
 
