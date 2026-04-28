@@ -6,12 +6,21 @@ st.set_page_config(page_title="SWR Split-Ticket Finder", layout="wide")
 
 @st.cache_data
 def load_data():
-    # Pandas will automatically unzip the file 'fares.zip' 
-    # and find the CSV inside it!
+    # Pandas will automatically unzip 'fares.zip'
     df = pd.read_csv('fares.zip')
     
-    # Keep your conversion logic here
+    # Standardize Column Names just in case they have spaces
+    df.columns = df.columns.str.strip()
+    
+    # Convert FARE to numeric (pence to pounds)
     df['FARE'] = pd.to_numeric(df['FARE'], errors='coerce') / 100
+    
+    # Ensure TICKET_CODE isn't empty (fills with 'N/A' if missing)
+    if 'TICKET_CODE' in df.columns:
+        df['TICKET_CODE'] = df['TICKET_CODE'].fillna('N/A')
+    else:
+        df['TICKET_CODE'] = 'N/A'
+        
     return df
 
 df = load_data()
@@ -20,7 +29,6 @@ df = load_data()
 col1, col2 = st.columns([1, 5]) 
 
 with col1:
-    # Double check your file name here!
     st.image("SWR_Logo.png", width=100) 
 with col2:
     st.markdown("# Split-Ticket Fare Finder")
@@ -32,14 +40,13 @@ st.divider()
 st.sidebar.header("Search Parameters")
 all_stations = sorted(df['ORIGIN_CLEAN'].unique())
 
-origin = st.sidebar.selectbox("Origin Station", all_stations, 
-                             index=all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0)
+# Set default origin to London Waterloo
+default_origin = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+
+origin = st.sidebar.selectbox("Origin Station", all_stations, index=all_stations.index(default_origin))
 destination = st.sidebar.selectbox("Destination Station", all_stations)
 
-# Get the list of all unique ticket types found in YOUR data
 available_tickets = sorted(df['TICKET_TYPE_DESCRIPTION'].unique())
-
-# Set the default to the first two tickets in the list, so it never fails
 default_selection = available_tickets[:2] if len(available_tickets) >= 2 else available_tickets
 
 ticket_filter = st.sidebar.multiselect(
@@ -55,13 +62,15 @@ if origin and destination:
                                   (filtered_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
-        st.warning(f"No direct fare found for selected ticket types. Try adding more types in the sidebar.")
+        st.warning(f"No direct fare found for selected ticket types.")
     else:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
+        # Display Direct Journey with the Code
         st.subheader(f"Direct Journey: {origin} to {destination}")
-        st.metric("Cheapest Direct Fare", f"£{direct_fare:.2f}", help=f"Using: {best_direct['TICKET_TYPE_DESCRIPTION']}")
+        st.metric("Cheapest Direct Fare", f"£{direct_fare:.2f}", 
+                  help=f"Using: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
         st.subheader("Potential Split Opportunities")
@@ -83,11 +92,15 @@ if origin and destination:
                 total_split = best_l1['FARE'] + best_l2['FARE']
                 saving = direct_fare - total_split
 
-                if saving > 0.01: # Show any saving at all
+                if saving > 0.01:
+                    # FORMATTING THE LABELS AS REQUESTED: £5.50 (Description/Code)
+                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+                    
                     results.append({
                         "Split At": split_station,
-                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']})",
-                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']})",
+                        "Leg 1": leg1_label,
+                        "Leg 2": leg2_label,
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
@@ -102,4 +115,5 @@ if origin and destination:
 
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
+    # Showing the TICKET_CODE column here too for consistency
     st.dataframe(df[(df['ORIGIN_CLEAN'] == origin) | (df['DEST_CLEAN'] == destination)])
