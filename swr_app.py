@@ -109,9 +109,9 @@ if origin and destination:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} ways to save money!")
+            st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
-            st.info("No split savings found for these specific ticket types.")
+            st.info("No split tickets found for these specific ticket types :)")
 
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
