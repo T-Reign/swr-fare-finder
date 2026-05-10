@@ -85,7 +85,6 @@ else:
         st.rerun()
 
     st.sidebar.divider()
-
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = []
     for _, row in ticket_data.iterrows():
