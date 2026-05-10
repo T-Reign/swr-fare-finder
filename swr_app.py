@@ -55,7 +55,7 @@ origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns e
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Initialize the Session State (Only runs once when the app starts)
+# 2. Initialize the Session State
 if 'origin_select' not in st.session_state:
     st.session_state.origin_select = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_select' not in st.session_state:
@@ -64,23 +64,20 @@ if 'dest_select' not in st.session_state:
 # 3. Define the Gatekeeper
 if not all_stations:
     st.sidebar.error("No station data found in fares.zip!")
-    origin, destination, ticket_filter = None, None, []
+    origin, destination, ticket_filter, lock_baseline = None, None, [], False
 else:
     # 4. STATION SELECTBOXES
-    # Note: We DON'T use 'index' here. The 'key' automatically links it to session_state.
+    # These are directly bound to the session state keys
     origin = st.sidebar.selectbox("Origin Station", all_stations, key="origin_select")
     destination = st.sidebar.selectbox("Destination Station", all_stations, key="dest_select")
 
-    # 5. THE REVERSE BUTTON (The "Infinite Flip")
+    # 5. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # Swap the values directly in the session_state keys
         old_o = st.session_state.origin_select
         old_d = st.session_state.dest_select
         
         st.session_state.origin_select = old_d
         st.session_state.dest_select = old_o
-        
-        # Rerun to update the UI
         st.rerun()
 
     st.sidebar.divider()
@@ -94,40 +91,23 @@ else:
             ticket_options.append(f"{desc} ({code})")
 
     ticket_options = sorted(list(set(ticket_options)))
-    
-    # Use a safe default selection
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-    # --- UNIQUE KEYS HERE ---
+    # Only ONE multiselect call
     selected_labels = st.sidebar.multiselect(
         "Ticket Types", 
         options=ticket_options, 
         default=default_vals, 
-        key="ticket_type_search"  # Changed from ticket_multiselect
+        key="ticket_type_search"
     )
     
+    # Only ONE toggle call
     lock_baseline = st.sidebar.toggle(
         "🔒 Lock Base Fare", 
-        key="lock_base_toggle"    # Added a specific key here too
+        key="lock_base_toggle"
     )
     
     # 7. Final Ticket Filter for the engine
-    ticket_filter = [label.split(" (")[0] for label in selected_labels]
-    ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-    ticket_options = []
-    for _, row in ticket_data.iterrows():
-        desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
-        if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
-            ticket_options.append(f"{desc} ({code})")
-
-    ticket_options = sorted(list(set(ticket_options)))
-    default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
-
-    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
-    
-    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
-    
-    # 8. Final Ticket Filter
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
