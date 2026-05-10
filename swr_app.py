@@ -110,7 +110,11 @@ else:
 
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
-    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
+    lock_baseline = st.sidebar.toggle(
+        "🔒 Lock Base Fare", 
+        key="lock_base_toggle",
+        help="When ON, the app compares split prices against the first ticket type in your list. When OFF, it compares against the cheapest available direct fare."
+    )
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
