@@ -95,18 +95,21 @@ else:
 
     # 6. The Reverse Button
     if st.sidebar.button("⇅ Reverse Journey"):
-        # We swap the ACTUAL variables currently in the boxes
-        old_origin = st.session_state.origin_val
-        old_dest = st.session_state.dest_val
+        # 1. Grab what is currently selected in the boxes right now
+        current_o = origin
+        current_d = destination
         
-        st.session_state.origin_val = old_dest
-        st.session_state.dest_val = old_origin
+        # 2. Save them into the 'memory' in the opposite slots
+        st.session_state.origin_val = current_d
+        st.session_state.dest_val = current_o
         
-        # This is the "Magic" line: it clears the internal widget memory
-        # so they are forced to look at o_idx and d_idx again
-        if "origin_select" in st.session_state: del st.session_state["origin_select"]
-        if "dest_select" in st.session_state: del st.session_state["dest_select"]
+        # 3. WIPE the widget keys so the boxes move to the new positions
+        if "origin_select" in st.session_state: 
+            del st.session_state["origin_select"]
+        if "dest_select" in st.session_state: 
+            del st.session_state["dest_select"]
         
+        # 4. Refresh the app
         st.rerun()
     
     # 7. Ticket Selection & Formatting
