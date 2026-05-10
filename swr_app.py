@@ -48,20 +48,16 @@ with col2:
 st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
-st.sidebar.header("Search Bar (SWR Only)")
+# (Keep your origins/destinations/all_stations logic at the top...)
 
-# 1. Get unique station values
-origins = df['ORIGIN_CLEAN'].dropna().unique()
-destinations = df['DEST_CLEAN'].dropna().unique()
-all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
-
-# 2. SESSION STATE SETUP (Short-term memory for the Reverse button)
+# 1. Initialize session state if it doesn't exist
 if 'origin_val' not in st.session_state:
     st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_val' not in st.session_state:
-    st.session_state.dest_val = all_stations[1]
+    st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
-# 3. STATION SELECTBOXES
+# 2. STATION SELECTBOXES 
+# We use 'index' to set the initial position based on our session_state values
 origin = st.sidebar.selectbox(
     "Origin Station", 
     all_stations, 
@@ -75,6 +71,14 @@ destination = st.sidebar.selectbox(
     index=all_stations.index(st.session_state.dest_val),
     key="dest_select"
 )
+
+# 3. THE REVERSE BUTTON
+if st.sidebar.button("⇅ Reverse Journey"):
+    # Store the CURRENT selection into memory, but swapped
+    st.session_state.origin_val = destination
+    st.session_state.dest_val = origin
+    # Force the app to rerun so the 'index' above catches the new values
+    st.rerun()
 
 # REVERSE BUTTON FUNCTION
 if st.sidebar.button("⇅ Reverse Journey"):
