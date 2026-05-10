@@ -63,11 +63,19 @@ if not all_stations:
     st.sidebar.error("No station data found. Please check your fares.zip file!")
     st.stop() # This stops the app here so it doesn't crash further down
 
-# 3. Initialize session state safely
-if 'origin_val' not in st.session_state:
-    st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
-if 'dest_val' not in st.session_state:
-    st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
+# 2. SAFE INDEX LOOKUP
+# We check if the station is in the list. If not, we reset to 0.
+o_idx = 0
+if st.session_state.origin_val in all_stations:
+    o_idx = all_stations.index(st.session_state.origin_val)
+
+# For destination, we try to pick the second item (index 1), 
+# but only if the list is long enough. Otherwise, use 0.
+d_idx = 0
+if st.session_state.dest_val in all_stations:
+    d_idx = all_stations.index(st.session_state.dest_val)
+elif len(all_stations) > 1:
+    d_idx = 1
 
 destination = st.sidebar.selectbox(
     "Destination Station", 
