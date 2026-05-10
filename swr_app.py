@@ -105,39 +105,30 @@ else:
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
-
-# We check if origin and destination exist and aren't empty
 if origin and destination and ticket_filter:
-    
-    # 1. Determine the Baseline (Direct) Fare logic
+    # Determine the Baseline (Direct) Fare
     if lock_baseline:
         baseline_ticket = ticket_filter[0]
         direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
     else:
         direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
 
-    # 2. Filter for the CURRENT direction selected in the sidebar
     direct_fare_row = direct_df[(direct_df['ORIGIN_CLEAN'] == origin) & 
                                 (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
-        st.warning(f"No direct fare found from {origin} to {destination} for the selected tickets.")
+        st.warning(f"No direct fare found for {'locked ticket: ' + ticket_filter[0] if lock_baseline else 'selected types'}.")
     else:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
-        # --- THIS IS THE PART THAT UPDATES THE DISPLAY ---
         st.subheader(f"Direct Journey: {origin} to {destination}")
-        
         lock_status = " (LOCKED)" if lock_baseline else ""
-        st.metric(f"Baseline Direct Fare{lock_status}", f"£{direct_fare:.2f}", 
+        st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
-        st.subheader(f"Potential Split Opportunities for {origin} → {destination}")
-        # --------------------------------------------------
-
-        # ... (Rest of your split calculation code follows)
+        st.subheader("Potential Split Opportunities")
 
         filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
