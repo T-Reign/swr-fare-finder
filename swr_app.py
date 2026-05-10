@@ -106,7 +106,7 @@ selected_labels = st.sidebar.multiselect(
 )
 
 # THE LOCK FUNCTION
-lock_baseline = st.sidebar.toggle("🔒 Lock Baseline Fare", help="Freezes the 'Direct Fare' to the first ticket type selected, so you can compare other ticket types against it.")
+lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", help="Freezes the 'Direct Fare' to the first ticket type selected, so you can compare other ticket types against it.")
 
 # Convert labels back to just descriptions for the engine
 ticket_filter = [label.split(" (")[0] for label in selected_labels]
@@ -131,7 +131,7 @@ if origin and destination and ticket_filter:
         
         st.subheader(f"Direct Journey: {origin} to {destination}")
         lock_status = " (LOCKED)" if lock_baseline else ""
-        st.metric(f"Baseline Direct Fare{lock_status}", f"£{direct_fare:.2f}", 
+        st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
@@ -172,9 +172,9 @@ if origin and destination and ticket_filter:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} split ticket opportunities!")
+            st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
-            st.info("No split tickets found for these specific ticket types.")
+            st.info("No split tickets found for these ticket types. :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
