@@ -86,9 +86,6 @@ else:
 
     st.sidebar.divider()
 
-    # 7. Ticket Selection & Lock
-    lock_baseline = st.sidebar.toggle("🔒 Lock Baseline Fare")
-    
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = []
     for _, row in ticket_data.iterrows():
@@ -100,6 +97,8 @@ else:
     default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
+      # 7. Ticket Selection & Lock
+    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
     
     # Final step: Convert labels back to descriptions for the math
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
