@@ -85,7 +85,7 @@ else:
 
     st.sidebar.divider()
     
-    # 6. Ticket Selection & Logic (Advance excluded)
+    # 6. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = []
     for _, row in ticket_data.iterrows():
@@ -94,14 +94,25 @@ else:
             ticket_options.append(f"{desc} ({code})")
 
     ticket_options = sorted(list(set(ticket_options)))
-    default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
+    
+    # Use a safe default selection
+    default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
+    # --- UNIQUE KEYS HERE ---
+    selected_labels = st.sidebar.multiselect(
+        "Ticket Types", 
+        options=ticket_options, 
+        default=default_vals, 
+        key="ticket_type_search"  # Changed from ticket_multiselect
+    )
     
-    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
+    lock_baseline = st.sidebar.toggle(
+        "🔒 Lock Base Fare", 
+        key="lock_base_toggle"    # Added a specific key here too
+    )
+    
+    # 7. Final Ticket Filter for the engine
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
-    
-    # 7. Ticket Selection & Formatting
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = []
     for _, row in ticket_data.iterrows():
