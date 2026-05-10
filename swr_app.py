@@ -49,31 +49,39 @@ st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
 st.sidebar.header("Search Bar (SWR Only)")
-# 1. Get unique values and drop anything that isn't a valid station name (like empty cells)
+
+# 1. Get unique values and drop empty cells
 origins = df['ORIGIN_CLEAN'].dropna().unique()
 destinations = df['DEST_CLEAN'].dropna().unique()
 
-# 2. Combine them and ensure everything is treated as a string
+# 2. Combine and ensure everything is a string
 all_stations_set = set(origins) | set(destinations)
 all_stations = sorted([str(s) for s in all_stations_set if s])
 
-# 3. Use this list for your dropdowns
-origin = st.sidebar.selectbox("Origin Station", all_stations, index=all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0)
-destination = st.sidebar.selectbox("Destination Station", all_stations)
+# 3. Create the boxes ONCE with unique keys to prevent the error
+default_origin_index = all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0
 
-# Set default origin to London Waterloo
-default_origin = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+origin = st.sidebar.selectbox(
+    "Origin Station", 
+    all_stations, 
+    index=default_origin_index,
+    key="origin_select"
+)
 
-origin = st.sidebar.selectbox("Origin Station", all_stations, index=all_stations.index(default_origin))
-destination = st.sidebar.selectbox("Destination Station", all_stations)
+destination = st.sidebar.selectbox(
+    "Destination Station", 
+    all_stations,
+    key="dest_select"
+)
 
 available_tickets = sorted(df['TICKET_TYPE_DESCRIPTION'].unique())
 default_selection = available_tickets[:2] if len(available_tickets) >= 2 else available_tickets
 
 ticket_filter = st.sidebar.multiselect(
     "Ticket Types", 
-    options=available_tickets,
-    default=default_selection
+    options=available_tickets, 
+    default=default_selection,
+    key="ticket_multiselect"
 )
 
 # --- 3. THE CALCULATION ENGINE ---
