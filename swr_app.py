@@ -100,6 +100,23 @@ else:
     
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
+    # 7. Ticket Selection & Formatting
+ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
+ticket_options = []
+for _, row in ticket_data.iterrows():
+desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
+if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
+ticket_options.append(f"{desc} ({code})")
+
+ticket_options = sorted(list(set(ticket_options)))
+default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
+
+selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
+
+lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
+
+# 8. Final Ticket Filter
+ticket_filter = [label.split(" (")[0] for label in selected_labels]
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
     # 1. Determine the Baseline (Direct) Fare
