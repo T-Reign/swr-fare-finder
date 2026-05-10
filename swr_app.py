@@ -55,52 +55,64 @@ origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns e
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Initialize the Session State (Only runs once when the app starts)
-if 'origin_select' not in st.session_state:
-    st.session_state.origin_select = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
-if 'dest_select' not in st.session_state:
-    st.session_state.dest_select = all_stations[1] if len(all_stations) > 1 else all_stations[0]
+# 2. DEFINE DEFAULTS
+origin = None
+destination = None
+ticket_filter = []
 
-# 3. Define the Gatekeeper
 if not all_stations:
-    st.sidebar.error("No station data found in fares.zip!")
-    origin, destination, ticket_filter = None, None, []
+st.sidebar.error("No station data found in fares.zip!")
 else:
-    # 4. STATION SELECTBOXES
-    # Note: We DON'T use 'index' here. The 'key' automatically links it to session_state.
-    origin = st.sidebar.selectbox("Origin Station", all_stations, key="origin_select")
-    destination = st.sidebar.selectbox("Destination Station", all_stations, key="dest_select")
+# 3. Initialize session state if not already set
+if 'origin_val' not in st.session_state:
+st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+if 'dest_val' not in st.session_state:
+st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
-    # 5. THE REVERSE BUTTON (The "Infinite Flip")
-    if st.sidebar.button("⇅ Reverse Journey"):
-        # Swap the values directly in the session_state keys
-        old_o = st.session_state.origin_select
-        old_d = st.session_state.dest_select
-        
-        st.session_state.origin_select = old_d
-        st.session_state.dest_select = old_o
-        
-        # Rerun to update the UI
-        st.rerun()
+# 4. Safe Index Lookup (This is what makes the flip visible in the UI)
+o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
+d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
-    st.sidebar.divider()
-    
-    # 6. Ticket Selection & Logic (Advance excluded)
-    ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-    ticket_options = []
-    for _, row in ticket_data.iterrows():
-        desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
-        if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
-            ticket_options.append(f"{desc} ({code})")
+# 5. Station Selectboxes - Linked directly to Session State
+# We add an 'on_change' or simply update the state manually
+origin = st.sidebar.selectbox(
+"Origin Station",
+all_stations,
+index=o_idx,
+key="origin_select"
+)
+# Update memory immediately if the user clicks the box manually
+st.session_state.origin_val = origin
 
-    ticket_options = sorted(list(set(ticket_options)))
-    default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
+destination = st.sidebar.selectbox(
+"Destination Station",
+all_stations,
+index=d_idx,
+key="dest_select"
+)
+# Update memory immediately if the user clicks the box manually
+st.session_state.dest_val = destination
 
-    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
-    
-    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
-    ticket_filter = [label.split(" (")[0] for label in selected_labels]
-    # 7. Ticket Selection & Formatting
+# 6. The Reverse Button
+if st.sidebar.button("⇅ Reverse Journey"):
+# 1. Grab what is currently selected in the boxes right now
+current_o = origin
+current_d = destination
+
+# 2. Save them into the 'memory' in the opposite slots
+st.session_state.origin_val = current_d
+st.session_state.dest_val = current_o
+
+# 3. WIPE the widget keys so the boxes move to the new positions
+if "origin_select" in st.session_state:
+del st.session_state["origin_select"]
+if "dest_select" in st.session_state:
+del st.session_state["dest_select"]
+
+# 4. Refresh the app
+st.rerun()
+
+# 7. Ticket Selection & Formatting
 ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
 ticket_options = []
 for _, row in ticket_data.iterrows():
