@@ -73,17 +73,41 @@ else:
     o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
     d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
-    # 5. Station Selectboxes - Linked to our calculated indices
-    origin = st.sidebar.selectbox("Origin Station", all_stations, index=o_idx, key="origin_select")
-    destination = st.sidebar.selectbox("Destination Station", all_stations, index=d_idx, key="dest_select")
+  # 5. Station Selectboxes - Linked directly to Session State
+    # We add an 'on_change' or simply update the state manually
+    origin = st.sidebar.selectbox(
+        "Origin Station", 
+        all_stations, 
+        index=o_idx, 
+        key="origin_select"
+    )
+    # Update memory immediately if the user clicks the box manually
+    st.session_state.origin_val = origin
 
-    # 6. The Reverse Button - Now correctly updates the state
+    destination = st.sidebar.selectbox(
+        "Destination Station", 
+        all_stations, 
+        index=d_idx, 
+        key="dest_select"
+    )
+    # Update memory immediately if the user clicks the box manually
+    st.session_state.dest_val = destination
+
+    # 6. The Reverse Button
     if st.sidebar.button("⇅ Reverse Journey"):
-        st.session_state.origin_val = destination
-        st.session_state.dest_val = origin
+        # We swap the ACTUAL variables currently in the boxes
+        old_origin = st.session_state.origin_val
+        old_dest = st.session_state.dest_val
+        
+        st.session_state.origin_val = old_dest
+        st.session_state.dest_val = old_origin
+        
+        # This is the "Magic" line: it clears the internal widget memory
+        # so they are forced to look at o_idx and d_idx again
+        if "origin_select" in st.session_state: del st.session_state["origin_select"]
+        if "dest_select" in st.session_state: del st.session_state["dest_select"]
+        
         st.rerun()
-
-    st.sidebar.divider()
     
     # 7. Ticket Selection & Formatting
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
