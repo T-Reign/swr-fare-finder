@@ -48,33 +48,26 @@ with col2:
 st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
-# (Keep your origins/destinations/all_stations logic as is)
+st.sidebar.header("Search Bar (SWR Only)")
 
-# 1. Initialize session state if it doesn't exist
+# 1. Get unique values and drop empty cells (NaN)
+origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns else []
+destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
+
+# 2. Combine and ensure everything is treated as a string
+all_stations_set = set(origins) | set(destinations)
+all_stations = sorted([str(s) for s in all_stations_set if s])
+
+# --- THE GATEKEEPER ---
+if not all_stations:
+    st.sidebar.error("No station data found. Please check your fares.zip file!")
+    st.stop() # This stops the app here so it doesn't crash further down
+
+# 3. Initialize session state safely
 if 'origin_val' not in st.session_state:
     st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_val' not in st.session_state:
     st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
-
-# 2. SAFE INDEX LOOKUP
-# This prevents the crash by checking if the station exists before asking for the index
-try:
-    o_idx = all_stations.index(st.session_state.origin_val)
-except (ValueError, KeyError):
-    o_idx = 0
-
-try:
-    d_idx = all_stations.index(st.session_state.dest_val)
-except (ValueError, KeyError):
-    d_idx = 1 if len(all_stations) > 1 else 0
-
-# 3. STATION SELECTBOXES
-origin = st.sidebar.selectbox(
-    "Origin Station", 
-    all_stations, 
-    index=o_idx,
-    key="origin_select"
-)
 
 destination = st.sidebar.selectbox(
     "Destination Station", 
