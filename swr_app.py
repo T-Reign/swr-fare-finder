@@ -160,7 +160,7 @@ if origin and destination and ticket_filter:
         
         st.divider()
         # This label also needs to be dynamic!
-        st.subheader(f"Potential Split Opportunities:")
+        st.subheader(f"Potential Split Opportunities: {origin} → {destination}")
         filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
