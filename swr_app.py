@@ -50,7 +50,7 @@ st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
 st.sidebar.header("Search Bar (SWR Only)")
-all_stations = sorted(df['ORIGIN_CLEAN'].unique())
+all_stations = sorted(list(set(df['ORIGIN_CLEAN'].unique()) | set(df['DEST_CLEAN'].unique())))
 
 # Set default origin to London Waterloo
 default_origin = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
