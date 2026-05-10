@@ -55,7 +55,9 @@ origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns e
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. THE MEMORY (Independent of the widget keys)
+# 2. Initialize flip counter and values
+if 'flip_count' not in st.session_state:
+    st.session_state.flip_count = 0
 if 'origin_val' not in st.session_state:
     st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_val' not in st.session_state:
@@ -63,7 +65,7 @@ if 'dest_val' not in st.session_state:
 
 # 3. Define the Gatekeeper
 if not all_stations:
-    st.sidebar.error("No station data found in fares.zip!")
+    st.sidebar.error("No station data found!")
     origin, destination, ticket_filter, lock_baseline = None, None, [], False
 else:
     # 4. Safe Index Lookup
@@ -71,42 +73,44 @@ else:
     d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
     # 5. STATION SELECTBOXES
-    # We use 'index' to set the position, but a unique key so they don't clash
-    origin = st.sidebar.selectbox("Origin Station", all_stations, index=o_idx, key="origin_box")
-    destination = st.sidebar.selectbox("Destination Station", all_stations, index=d_idx, key="dest_box")
+    # The key changes every time we flip (origin_box_0, origin_box_1, etc.)
+    # This forces Streamlit to refresh the widget completely.
+    origin = st.sidebar.selectbox(
+        "Origin Station", 
+        all_stations, 
+        index=o_idx, 
+        key=f"origin_box_{st.session_state.flip_count}"
+    )
+    destination = st.sidebar.selectbox(
+        "Destination Station", 
+        all_stations, 
+        index=d_idx, 
+        key=f"dest_box_{st.session_state.flip_count}"
+    )
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # We swap the values in our "Memory" variables, NOT the widget keys
+        # Swap the memory
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
+        
+        # Increment the counter to "kill" the old widgets and make new ones
+        st.session_state.flip_count += 1
         st.rerun()
 
     st.sidebar.divider()
     
     # 7. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-    ticket_options = []
-    for _, row in ticket_data.iterrows():
-        desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
-        if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
-            ticket_options.append(f"{desc} ({code})")
+    ticket_options = sorted([f"{str(row['TICKET_TYPE_DESCRIPTION']).strip()} ({str(row['TICKET_CODE']).strip()})" 
+                             for _, row in ticket_data.iterrows() 
+                             if not ("ADVANCE" in str(row['TICKET_TYPE_DESCRIPTION']).upper() or str(row['TICKET_CODE']).startswith(('1', '2')))])
 
-    ticket_options = sorted(list(set(ticket_options)))
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
-
-    selected_labels = st.sidebar.multiselect(
-        "Ticket Types", 
-        options=ticket_options, 
-        default=default_vals, 
-        key="ticket_type_search"
-    )
-    
+    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
-    
-    # Final Ticket Filter for the engine
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
