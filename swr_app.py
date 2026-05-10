@@ -36,7 +36,18 @@ def load_data():
     return df
 
 df = load_data()
+df = pd.read_csv(f)
+    
+    # --- ADD THIS INSURANCE ---
+    # This checks for the "old" names and renames them to the "new" names
+    rename_map = {
+        'ORIGIN_DESCRIPTION': 'ORIGIN_CLEAN',
+        'DESTINATION_DESCRIPTION': 'DEST_CLEAN'
+    }
+    df = df.rename(columns=rename_map)
+    # ---------------------------
 
+    df.columns = df.columns.str.strip()
 # --- THE UI DISPLAY ---
 col1, col2 = st.columns([1, 5]) 
 
