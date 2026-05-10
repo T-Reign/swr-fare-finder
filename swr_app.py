@@ -6,20 +6,32 @@ st.set_page_config(page_title="SWR Split-Ticket Finder", layout="wide")
 
 @st.cache_data
 def load_data():
-    # Pandas will automatically unzip 'fares.zip'
-    df = pd.read_csv('fares.zip')
+    import zipfile
     
-    # Standardize Column Names just in case they have spaces
+    # 1. Open the zip file
+    with zipfile.ZipFile('fares.zip', 'r') as z:
+        # 2. Find the name of the CSV file inside (ignores hidden Mac folders)
+        csv_files = [f for f in z.namelist() if f.endswith('.csv') and not f.startswith('__MACOSX')]
+        
+        if not csv_files:
+            st.error("No CSV file found inside fares.zip!")
+            return pd.DataFrame()
+            
+        # 3. Open that specific file
+        with z.open(csv_files[0]) as f:
+            df = pd.read_csv(f)
+    
+    # Standardize Column Names
     df.columns = df.columns.str.strip()
     
     # Convert FARE to numeric (pence to pounds)
     df['FARE'] = pd.to_numeric(df['FARE'], errors='coerce') / 100
     
-    # Ensure TICKET_CODE isn't empty (fills with 'N/A' if missing)
-    if 'TICKET_CODE' in df.columns:
-        df['TICKET_CODE'] = df['TICKET_CODE'].fillna('N/A')
-    else:
+    # Ensure TICKET_CODE exists
+    if 'TICKET_CODE' not in df.columns:
         df['TICKET_CODE'] = 'N/A'
+    else:
+        df['TICKET_CODE'] = df['TICKET_CODE'].fillna('N/A')
         
     return df
 
