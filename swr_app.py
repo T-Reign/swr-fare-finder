@@ -111,7 +111,6 @@ else:
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
-    help=f"Allows additional ticket types to be compared to the fare fare that you filtered")
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
