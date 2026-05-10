@@ -50,73 +50,59 @@ st.divider()
 # --- 2. SIDEBAR SEARCH ---
 st.sidebar.header("Search Bar (SWR Only)")
 
-# 1. Get unique values and drop empty cells (NaN)
+# 1. Get unique values safely
 origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns else []
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
+all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Combine and ensure everything is treated as a string
-all_stations_set = set(origins) | set(destinations)
-all_stations = sorted([str(s) for s in all_stations_set if s])
+# 2. DEFINE DEFAULTS (The "Gatekeeper")
+# We define these as None first so the Calculation Engine doesn't crash
+origin = None
+destination = None
+ticket_filter = []
 
-# --- THE GATEKEEPER ---
 if not all_stations:
-    st.sidebar.error("No station data found. Please check your fares.zip file!")
-    st.stop() # This stops the app here so it doesn't crash further down
+    st.sidebar.error("No station data found in fares.zip!")
+else:
+    # 3. Initialize session state
+    if 'origin_val' not in st.session_state:
+        st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+    if 'dest_val' not in st.session_state:
+        st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
-# 2. SAFE INDEX LOOKUP
-# We check if the station is in the list. If not, we reset to 0.
-o_idx = 0
-if st.session_state.origin_val in all_stations:
-    o_idx = all_stations.index(st.session_state.origin_val)
+    # 4. Safe Index Lookup
+    o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
+    d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
-# For destination, we try to pick the second item (index 1), 
-# but only if the list is long enough. Otherwise, use 0.
-d_idx = 0
-if st.session_state.dest_val in all_stations:
-    d_idx = all_stations.index(st.session_state.dest_val)
-elif len(all_stations) > 1:
-    d_idx = 1
+    # 5. Station Selectboxes
+    origin = st.sidebar.selectbox("Origin Station", all_stations, index=o_idx, key="origin_select")
+    destination = st.sidebar.selectbox("Destination Station", all_stations, index=d_idx, key="dest_select")
 
-destination = st.sidebar.selectbox(
-    "Destination Station", 
-    all_stations, 
-    index=d_idx,
-    key="dest_select"
-)
+    # 6. The Reverse Button
+    if st.sidebar.button("⇅ Reverse Journey"):
+        st.session_state.origin_val = destination
+        st.session_state.dest_val = origin
+        st.rerun()
 
-# 4. THE REVERSE BUTTON
-if st.sidebar.button("⇅ Reverse Journey"):
-    # Update the memory with the CURRENTLY selected values from the boxes
-    st.session_state.origin_val = destination
-    st.session_state.dest_val = origin
-    st.rerun()
+    st.sidebar.divider()
 
-st.sidebar.divider()
+    # 7. Ticket Selection & Lock
+    lock_baseline = st.sidebar.toggle("🔒 Lock Baseline Fare")
+    
+    ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
+    ticket_options = []
+    for _, row in ticket_data.iterrows():
+        desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
+        if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
+            ticket_options.append(f"{desc} ({code})")
 
-# 4. TICKET SELECTION & LOCK
-# Create labels: "Description (Code)"
-ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-ticket_options = []
-for _, row in ticket_data.iterrows():
-    desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
-    if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
-        ticket_options.append(f"{desc} ({code})")
+    ticket_options = sorted(list(set(ticket_options)))
+    default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-ticket_options = sorted(list(set(ticket_options)))
-default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
-
-selected_labels = st.sidebar.multiselect(
-    "Ticket Types", 
-    options=ticket_options, 
-    default=default_selection,
-    key="ticket_multiselect"
-)
-
-# THE LOCK FUNCTION
-lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", help="Freezes the 'Direct Fare' to the first ticket type selected, so you can compare other ticket types against it.")
-
-# Convert labels back to just descriptions for the engine
-ticket_filter = [label.split(" (")[0] for label in selected_labels]
+    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
+    
+    # Final step: Convert labels back to descriptions for the math
+    ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
