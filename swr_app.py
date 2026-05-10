@@ -114,7 +114,6 @@ ticket_filter = [label.split(" (")[0] for label in selected_labels]
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
     # Determine the Baseline (Direct) Fare
-    # If locked, we only look at the FIRST ticket type in your filter list
     if lock_baseline:
         baseline_ticket = ticket_filter[0]
         direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
@@ -130,17 +129,14 @@ if origin and destination and ticket_filter:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
-        # Display Direct Journey Metric
-        lock_status = " (LOCKED)" if lock_baseline else ""
         st.subheader(f"Direct Journey: {origin} to {destination}")
+        lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Baseline Direct Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
         st.subheader("Potential Split Opportunities")
-        st.caption(f"Comparing splits using ALL selected ticket types against the {best_direct['TICKET_CODE']} baseline.")
 
-        # Splits always use the FULL ticket_filter
         filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
@@ -160,10 +156,14 @@ if origin and destination and ticket_filter:
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
+                    # RE-APPLYING YOUR PREFERRED FORMATTING HERE:
+                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+                    
                     results.append({
                         "Split At": split_station,
-                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_CODE']})",
-                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_CODE']})",
+                        "Leg 1": leg1_label,
+                        "Leg 2": leg2_label,
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
@@ -172,9 +172,10 @@ if origin and destination and ticket_filter:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} ways to beat the {best_direct['TICKET_CODE']} price!")
+            st.success(f"Found {len(results)} split ticket opportunities!")
         else:
-            st.info("No splits found that are cheaper than the baseline.")
+            st.info("No split tickets found for these specific ticket types.")
+            
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
     # Showing the TICKET_CODE column here too for consistency
