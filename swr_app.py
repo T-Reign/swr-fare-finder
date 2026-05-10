@@ -50,46 +50,49 @@ st.divider()
 # --- 2. SIDEBAR SEARCH ---
 st.sidebar.header("Search Bar (SWR Only)")
 
-# 1. Get unique values and drop empty cells (NaN)
+# 1. Get unique station values
 origins = df['ORIGIN_CLEAN'].dropna().unique()
 destinations = df['DEST_CLEAN'].dropna().unique()
+all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Combine and ensure everything is treated as a string for sorting
-all_stations_set = set(origins) | set(destinations)
-all_stations = sorted([str(s) for s in all_stations_set if s])
-
-# 3. Create the Station selectboxes with unique keys
-# We set Waterloo as the default starting point if it exists
+# 2. Create the Station selectboxes
 default_origin_index = all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0
 
-origin = st.sidebar.selectbox(
-    "Origin Station", 
-    all_stations, 
-    index=default_origin_index,
-    key="origin_select"
-)
+origin = st.sidebar.selectbox("Origin Station", all_stations, index=default_origin_index, key="origin_select")
+destination = st.sidebar.selectbox("Destination Station", all_stations, key="dest_select")
 
-destination = st.sidebar.selectbox(
-    "Destination Station", 
-    all_stations,
-    key="dest_select"
-)
+# 3. CREATE TICKET LABELS: "Description (Code)"
+# We filter out Advance tickets here
+ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
 
-# 4. Get unique ticket types and drop any empty (NaN) values
-raw_tickets = df['TICKET_TYPE_DESCRIPTION'].dropna().unique()
+ticket_options = []
+for _, row in ticket_data.iterrows():
+    desc = str(row['TICKET_TYPE_DESCRIPTION']).strip()
+    code = str(row['TICKET_CODE']).strip()
+    
+    # Logic to exclude Advance tickets
+    is_advance = "ADVANCE" in desc.upper() or code.startswith(('1', '2'))
+    
+    if not is_advance:
+        label = f"{desc} ({code})"
+        ticket_options.append(label)
 
-# 5. Sort them alphabetically as strings
-available_tickets = sorted([str(t) for t in raw_tickets])
+ticket_options = sorted(list(set(ticket_options)))
 
-# 6. Set the default selection (first two tickets)
-default_selection = available_tickets[:2] if len(available_tickets) >= 2 else available_tickets
+# 4. Multi-select for Ticket Types
+# We pick the first two non-advance tickets as default
+default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-ticket_filter = st.sidebar.multiselect(
+selected_labels = st.sidebar.multiselect(
     "Ticket Types", 
-    options=available_tickets, 
+    options=ticket_options, 
     default=default_selection,
     key="ticket_multiselect"
 )
+
+# 5. CONVERT LABELS BACK TO DESCRIPTIONS (for the calculation engine)
+# This strips the "(SDR)" part back off so the math still works
+ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination:
