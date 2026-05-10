@@ -55,34 +55,38 @@ origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns e
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Initialize the Session State
-if 'origin_select' not in st.session_state:
-    st.session_state.origin_select = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
-if 'dest_select' not in st.session_state:
-    st.session_state.dest_select = all_stations[1] if len(all_stations) > 1 else all_stations[0]
+# 2. THE MEMORY (Independent of the widget keys)
+if 'origin_val' not in st.session_state:
+    st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+if 'dest_val' not in st.session_state:
+    st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
 # 3. Define the Gatekeeper
 if not all_stations:
     st.sidebar.error("No station data found in fares.zip!")
     origin, destination, ticket_filter, lock_baseline = None, None, [], False
 else:
-    # 4. STATION SELECTBOXES
-    # These are directly bound to the session state keys
-    origin = st.sidebar.selectbox("Origin Station", all_stations, key="origin_select")
-    destination = st.sidebar.selectbox("Destination Station", all_stations, key="dest_select")
+    # 4. Safe Index Lookup
+    o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
+    d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
-    # 5. THE REVERSE BUTTON
+    # 5. STATION SELECTBOXES
+    # We use 'index' to set the position, but a unique key so they don't clash
+    origin = st.sidebar.selectbox("Origin Station", all_stations, index=o_idx, key="origin_box")
+    destination = st.sidebar.selectbox("Destination Station", all_stations, index=d_idx, key="dest_box")
+
+    # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        old_o = st.session_state.origin_select
-        old_d = st.session_state.dest_select
-        
-        st.session_state.origin_select = old_d
-        st.session_state.dest_select = old_o
+        # We swap the values in our "Memory" variables, NOT the widget keys
+        old_o = origin
+        old_d = destination
+        st.session_state.origin_val = old_d
+        st.session_state.dest_val = old_o
         st.rerun()
 
     st.sidebar.divider()
     
-    # 6. Ticket Selection Logic
+    # 7. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = []
     for _, row in ticket_data.iterrows():
@@ -93,7 +97,6 @@ else:
     ticket_options = sorted(list(set(ticket_options)))
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-    # Only ONE multiselect call
     selected_labels = st.sidebar.multiselect(
         "Ticket Types", 
         options=ticket_options, 
@@ -101,13 +104,9 @@ else:
         key="ticket_type_search"
     )
     
-    # Only ONE toggle call
-    lock_baseline = st.sidebar.toggle(
-        "🔒 Lock Base Fare", 
-        key="lock_base_toggle"
-    )
+    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
     
-    # 7. Final Ticket Filter for the engine
+    # Final Ticket Filter for the engine
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
