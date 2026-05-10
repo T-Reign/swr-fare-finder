@@ -55,114 +55,79 @@ origins = df['ORIGIN_CLEAN'].dropna().unique() if 'ORIGIN_CLEAN' in df.columns e
 destinations = df['DEST_CLEAN'].dropna().unique() if 'DEST_CLEAN' in df.columns else []
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. DEFINE DEFAULTS
+# 2. DEFINE DEFAULTS (The "Gatekeeper")
+# We define these as None first so the Calculation Engine doesn't crash
 origin = None
 destination = None
 ticket_filter = []
 
 if not all_stations:
-st.sidebar.error("No station data found in fares.zip!")
+    st.sidebar.error("No station data found in fares.zip!")
 else:
-# 3. Initialize session state if not already set
-if 'origin_val' not in st.session_state:
-st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
-if 'dest_val' not in st.session_state:
-st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
+    # 3. Initialize session state
+    if 'origin_val' not in st.session_state:
+        st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+    if 'dest_val' not in st.session_state:
+        st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
-# 4. Safe Index Lookup (This is what makes the flip visible in the UI)
-o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
-d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
+    # 4. Safe Index Lookup
+    o_idx = all_stations.index(st.session_state.origin_val) if st.session_state.origin_val in all_stations else 0
+    d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
-# 5. Station Selectboxes - Linked directly to Session State
-# We add an 'on_change' or simply update the state manually
-origin = st.sidebar.selectbox(
-"Origin Station",
-all_stations,
-index=o_idx,
-key="origin_select"
-)
-# Update memory immediately if the user clicks the box manually
-st.session_state.origin_val = origin
+    # 5. Station Selectboxes
+    origin = st.sidebar.selectbox("Origin Station", all_stations, index=o_idx, key="origin_select")
+    destination = st.sidebar.selectbox("Destination Station", all_stations, index=d_idx, key="dest_select")
 
-destination = st.sidebar.selectbox(
-"Destination Station",
-all_stations,
-index=d_idx,
-key="dest_select"
-)
-# Update memory immediately if the user clicks the box manually
-st.session_state.dest_val = destination
+    # 6. The Reverse Button
+    if st.sidebar.button("⇅ Reverse Journey"):
+        st.session_state.origin_val = destination
+        st.session_state.dest_val = origin
+        st.rerun()
 
-# 6. The Reverse Button
-if st.sidebar.button("⇅ Reverse Journey"):
-# 1. Grab what is currently selected in the boxes right now
-current_o = origin
-current_d = destination
+    st.sidebar.divider()
+    ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
+    ticket_options = []
+    for _, row in ticket_data.iterrows():
+        desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
+        if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
+            ticket_options.append(f"{desc} ({code})")
 
-# 2. Save them into the 'memory' in the opposite slots
-st.session_state.origin_val = current_d
-st.session_state.dest_val = current_o
+    ticket_options = sorted(list(set(ticket_options)))
+    default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-# 3. WIPE the widget keys so the boxes move to the new positions
-if "origin_select" in st.session_state:
-del st.session_state["origin_select"]
-if "dest_select" in st.session_state:
-del st.session_state["dest_select"]
+    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
+      # 7. Ticket Selection & Lock
+    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
+    
+    # Final step: Convert labels back to descriptions for the math
+    ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
-# 4. Refresh the app
-st.rerun()
-
-# 7. Ticket Selection & Formatting
-ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-ticket_options = []
-for _, row in ticket_data.iterrows():
-desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
-if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
-ticket_options.append(f"{desc} ({code})")
-
-ticket_options = sorted(list(set(ticket_options)))
-default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
-
-selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_selection, key="ticket_multiselect")
-
-lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare")
-
-# 8. Final Ticket Filter
-ticket_filter = [label.split(" (")[0] for label in selected_labels]
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
-    # 1. Determine the Baseline (Direct) Fare
+    # Determine the Baseline (Direct) Fare
     if lock_baseline:
-        # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
         direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
     else:
-        # Otherwise, we look at all selected types
         direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
 
-    # 2. FIND THE DIRECT ROW FOR THE CURRENT DIRECTION
-    # We use 'origin' and 'destination' directly from the selectboxes
     direct_fare_row = direct_df[(direct_df['ORIGIN_CLEAN'] == origin) & 
                                 (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
-        st.warning(f"No direct fare found for {origin} to {destination}.")
+        st.warning(f"No direct fare found for {'locked ticket: ' + ticket_filter[0] if lock_baseline else 'selected types'}.")
     else:
-        # Get the cheapest version of the direct ticket
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
-        # 3. UPDATE THE HEADER AND METRIC
-        # This ensures the text physically changes from "London to Brock" to "Brock to London"
         st.subheader(f"Direct Journey: {origin} to {destination}")
-        
         lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
-        # This label also needs to be dynamic!
-        st.subheader(f"Potential Split Opportunities: {origin} → {destination}")
+        st.subheader("Potential Split Opportunities")
+
         filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
