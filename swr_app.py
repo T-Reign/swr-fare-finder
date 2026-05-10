@@ -49,7 +49,17 @@ st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
 st.sidebar.header("Search Bar (SWR Only)")
-all_stations = sorted(list(set(df['ORIGIN_CLEAN'].unique()) | set(df['DEST_CLEAN'].unique())))
+# 1. Get unique values and drop anything that isn't a valid station name (like empty cells)
+origins = df['ORIGIN_CLEAN'].dropna().unique()
+destinations = df['DEST_CLEAN'].dropna().unique()
+
+# 2. Combine them and ensure everything is treated as a string
+all_stations_set = set(origins) | set(destinations)
+all_stations = sorted([str(s) for s in all_stations_set if s])
+
+# 3. Use this list for your dropdowns
+origin = st.sidebar.selectbox("Origin Station", all_stations, index=all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0)
+destination = st.sidebar.selectbox("Destination Station", all_stations)
 
 # Set default origin to London Waterloo
 default_origin = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
