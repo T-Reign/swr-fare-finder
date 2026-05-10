@@ -48,7 +48,7 @@ with col2:
 st.divider()
 
 # --- 2. SIDEBAR SEARCH ---
-# (Keep your origins/destinations/all_stations logic at the top...)
+# (Keep your origins/destinations/all_stations logic as is)
 
 # 1. Initialize session state if it doesn't exist
 if 'origin_val' not in st.session_state:
@@ -56,36 +56,38 @@ if 'origin_val' not in st.session_state:
 if 'dest_val' not in st.session_state:
     st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
 
-# 2. STATION SELECTBOXES 
-# We use 'index' to set the initial position based on our session_state values
+# 2. SAFE INDEX LOOKUP
+# This prevents the crash by checking if the station exists before asking for the index
+try:
+    o_idx = all_stations.index(st.session_state.origin_val)
+except (ValueError, KeyError):
+    o_idx = 0
+
+try:
+    d_idx = all_stations.index(st.session_state.dest_val)
+except (ValueError, KeyError):
+    d_idx = 1 if len(all_stations) > 1 else 0
+
+# 3. STATION SELECTBOXES
 origin = st.sidebar.selectbox(
     "Origin Station", 
     all_stations, 
-    index=all_stations.index(st.session_state.origin_val),
+    index=o_idx,
     key="origin_select"
 )
 
 destination = st.sidebar.selectbox(
     "Destination Station", 
     all_stations, 
-    index=all_stations.index(st.session_state.dest_val),
+    index=d_idx,
     key="dest_select"
 )
 
-# 3. THE REVERSE BUTTON
+# 4. THE REVERSE BUTTON
 if st.sidebar.button("⇅ Reverse Journey"):
-    # Store the CURRENT selection into memory, but swapped
+    # Update the memory with the CURRENTLY selected values from the boxes
     st.session_state.origin_val = destination
     st.session_state.dest_val = origin
-    # Force the app to rerun so the 'index' above catches the new values
-    st.rerun()
-
-# REVERSE BUTTON FUNCTION
-if st.sidebar.button("⇅ Reverse Journey"):
-    # Swap the values in memory
-    st.session_state.origin_val = destination
-    st.session_state.dest_val = origin
-    # Rerun the app to update the boxes
     st.rerun()
 
 st.sidebar.divider()
