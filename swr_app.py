@@ -55,32 +55,47 @@ origins = df['ORIGIN_CLEAN'].dropna().unique()
 destinations = df['DEST_CLEAN'].dropna().unique()
 all_stations = sorted([str(s) for s in (set(origins) | set(destinations)) if s])
 
-# 2. Create the Station selectboxes
-default_origin_index = all_stations.index("London Waterloo") if "London Waterloo" in all_stations else 0
+# 2. SESSION STATE SETUP (Short-term memory for the Reverse button)
+if 'origin_val' not in st.session_state:
+    st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
+if 'dest_val' not in st.session_state:
+    st.session_state.dest_val = all_stations[1]
 
-origin = st.sidebar.selectbox("Origin Station", all_stations, index=default_origin_index, key="origin_select")
-destination = st.sidebar.selectbox("Destination Station", all_stations, key="dest_select")
+# 3. STATION SELECTBOXES
+origin = st.sidebar.selectbox(
+    "Origin Station", 
+    all_stations, 
+    index=all_stations.index(st.session_state.origin_val),
+    key="origin_select"
+)
 
-# 3. CREATE TICKET LABELS: "Description (Code)"
-# We filter out Advance tickets here
+destination = st.sidebar.selectbox(
+    "Destination Station", 
+    all_stations, 
+    index=all_stations.index(st.session_state.dest_val),
+    key="dest_select"
+)
+
+# REVERSE BUTTON FUNCTION
+if st.sidebar.button("⇅ Reverse Journey"):
+    # Swap the values in memory
+    st.session_state.origin_val = destination
+    st.session_state.dest_val = origin
+    # Rerun the app to update the boxes
+    st.rerun()
+
+st.sidebar.divider()
+
+# 4. TICKET SELECTION & LOCK
+# Create labels: "Description (Code)"
 ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
-
 ticket_options = []
 for _, row in ticket_data.iterrows():
-    desc = str(row['TICKET_TYPE_DESCRIPTION']).strip()
-    code = str(row['TICKET_CODE']).strip()
-    
-    # Logic to exclude Advance tickets
-    is_advance = "ADVANCE" in desc.upper() or code.startswith(('1', '2'))
-    
-    if not is_advance:
-        label = f"{desc} ({code})"
-        ticket_options.append(label)
+    desc, code = str(row['TICKET_TYPE_DESCRIPTION']).strip(), str(row['TICKET_CODE']).strip()
+    if not ("ADVANCE" in desc.upper() or code.startswith(('1', '2'))):
+        ticket_options.append(f"{desc} ({code})")
 
 ticket_options = sorted(list(set(ticket_options)))
-
-# 4. Multi-select for Ticket Types
-# We pick the first two non-advance tickets as default
 default_selection = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
 selected_labels = st.sidebar.multiselect(
@@ -90,30 +105,43 @@ selected_labels = st.sidebar.multiselect(
     key="ticket_multiselect"
 )
 
-# 5. CONVERT LABELS BACK TO DESCRIPTIONS (for the calculation engine)
-# This strips the "(SDR)" part back off so the math still works
+# THE LOCK FUNCTION
+lock_baseline = st.sidebar.toggle("🔒 Lock Baseline Fare", help="Freezes the 'Direct Fare' to the first ticket type selected, so you can compare other ticket types against it.")
+
+# Convert labels back to just descriptions for the engine
 ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
-if origin and destination:
-    filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
-    direct_fare_row = filtered_df[(filtered_df['ORIGIN_CLEAN'] == origin) & 
-                                  (filtered_df['DEST_CLEAN'] == destination)]
+if origin and destination and ticket_filter:
+    # Determine the Baseline (Direct) Fare
+    # If locked, we only look at the FIRST ticket type in your filter list
+    if lock_baseline:
+        baseline_ticket = ticket_filter[0]
+        direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
+    else:
+        direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
+
+    direct_fare_row = direct_df[(direct_df['ORIGIN_CLEAN'] == origin) & 
+                                (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
-        st.warning(f"No direct fare found for selected ticket types.")
+        st.warning(f"No direct fare found for {'locked ticket: ' + ticket_filter[0] if lock_baseline else 'selected types'}.")
     else:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
-        # Display Direct Journey with the Code
+        # Display Direct Journey Metric
+        lock_status = " (LOCKED)" if lock_baseline else ""
         st.subheader(f"Direct Journey: {origin} to {destination}")
-        st.metric("Cheapest Direct Fare", f"£{direct_fare:.2f}", 
-                  help=f"Using: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
+        st.metric(f"Baseline Direct Fare{lock_status}", f"£{direct_fare:.2f}", 
+                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
         st.subheader("Potential Split Opportunities")
+        st.caption(f"Comparing splits using ALL selected ticket types against the {best_direct['TICKET_CODE']} baseline.")
 
+        # Splits always use the FULL ticket_filter
+        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
 
@@ -132,14 +160,10 @@ if origin and destination:
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
-                    # FORMATTING THE LABELS AS REQUESTED: £5.50 (Description/Code)
-                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
-                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
-                    
                     results.append({
                         "Split At": split_station,
-                        "Leg 1": leg1_label,
-                        "Leg 2": leg2_label,
+                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_CODE']})",
+                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_CODE']})",
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
@@ -148,10 +172,9 @@ if origin and destination:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} split ticket opportunities :(")
+            st.success(f"Found {len(results)} ways to beat the {best_direct['TICKET_CODE']} price!")
         else:
-            st.info("No split tickets found for these specific ticket types :)")
-
+            st.info("No splits found that are cheaper than the baseline.")
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
     # Showing the TICKET_CODE column here too for consistency
