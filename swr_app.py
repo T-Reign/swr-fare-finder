@@ -88,18 +88,18 @@ else:
         key=f"dest_box_{st.session_state.flip_count}"
     )
 
-  # 6. THE REVERSE BUTTON
+    # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
         # Swap the memory
-        old_o = st.session_state.origin_val
-        old_d = st.session_state.dest_val
+        old_o = origin
+        old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
         
-        # This counter change forces the app to treat the next run as "new"
+        # Increment the counter to "kill" the old widgets and make new ones
         st.session_state.flip_count += 1
         st.rerun()
-        
+
     st.sidebar.divider()
     
     # 7. Ticket Selection Logic
@@ -115,88 +115,42 @@ else:
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
-    
-    # 1. THE ULTIMATE RESET: Wipe results every single time the script starts
-    if "current_results" in st.session_state:
-        del st.session_state["current_results"]
-    
-    results = [] 
-    
-    # 2. Determine the Baseline (Direct) Fare
+    # 1. Determine the Baseline (Direct) Fare
     if lock_baseline:
+        # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
         direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
     else:
+        # Otherwise, we look at all selected types
         direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
 
+    # 2. FIND THE DIRECT ROW FOR THE CURRENT DIRECTION
+    # We use 'origin' and 'destination' directly from the selectboxes
     direct_fare_row = direct_df[(direct_df['ORIGIN_CLEAN'] == origin) & 
                                 (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
         st.warning(f"No direct fare found for {origin} to {destination}.")
     else:
+        # Get the cheapest version of the direct ticket
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
+        # 3. UPDATE THE HEADER AND METRIC
+        # This ensures the text physically changes from "London to Brock" to "Brock to London"
         st.subheader(f"Direct Journey: {origin} to {destination}")
-        st.metric(f"Direct Base Fare", f"£{direct_fare:.2f}")
+        
+        lock_status = " (LOCKED)" if lock_baseline else ""
+        st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
+                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
+        
         st.divider()
-        st.subheader(f"Split Opportunities: {origin} to {destination}")
+        # This label also needs to be dynamic!
+        st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        # 3. RE-CALCULATE EVERYTHING
-        # We use a completely fresh copy of the dataframe here
-        calc_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)].copy()
-        
-        # Only look for splits starting at the CURRENT origin
-        possible_splits = calc_df[calc_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
-
-        for split_station in possible_splits:
-            if split_station == destination or split_station == origin:
-                continue
-            
-            l1 = calc_df[(calc_df['ORIGIN_CLEAN'] == origin) & (calc_df['DEST_CLEAN'] == split_station)]
-            l2 = calc_df[(calc_df['ORIGIN_CLEAN'] == split_station) & (calc_df['DEST_CLEAN'] == destination)]
-
-            if not l1.empty and not l2.empty:
-                b1 = l1.loc[l1['FARE'].idxmin()]
-                b2 = l2.loc[l2['FARE'].idxmin()]
-                
-                t_split = b1['FARE'] + b2['FARE']
-                sav = direct_fare - t_split
-
-                if sav > 0.01:
-                    results.append({
-                        "Route": f"{origin} ➔ {destination}", # Proof of direction
-                        "Split At": split_station,
-                        "Leg 1": f"£{b1['FARE']:.2f} ({b1['TICKET_CODE']})",
-                        "Leg 2": f"£{b2['FARE']:.2f} ({b2['TICKET_CODE']})",
-                        "Total": f"£{t_split:.2f}",
-                        "Saving": f"£{sav:.2f}",
-                        "RawSav": sav
-                    })
-
-        # 4. THE DISPLAY (With a forced unique ID)
-        if results:
-            final_df = pd.DataFrame(results).sort_values("RawSav", ascending=False)
-            
-            # This 'container' forces a fresh UI draw
-            with st.container():
-                st.dataframe(
-                    final_df.drop(columns=["RawSav"]), 
-                    use_container_width=True, 
-                    hide_index=True,
-                    key=f"final_table_{st.session_state.flip_count}" # Using the flip count key
-                )
-            st.success(f"Updated: {origin} to {destination}")
-        else:
-            st.info(f"No splits found for {origin} to {destination}")
-
-        # --- THE AUTOMATIC RERUN TABLE AREA ---
-        table_placeholder = st.empty() # Create a fresh hole in the page
-        
-        results = []
-        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)].copy()
+        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
+        results = []
 
         for split_station in possible_splits:
             if split_station == destination or split_station == origin:
@@ -208,14 +162,19 @@ if origin and destination and ticket_filter:
             if not l1_data.empty and not l2_data.empty:
                 best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
                 best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
+                
                 total_split = best_l1['FARE'] + best_l2['FARE']
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
+                    # RE-APPLYING YOUR PREFERRED FORMATTING HERE:
+                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+                    
                     results.append({
                         "Split At": split_station,
-                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']})",
-                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']})",
+                        "Leg 1": leg1_label,
+                        "Leg 2": leg2_label,
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
@@ -223,18 +182,10 @@ if origin and destination and ticket_filter:
 
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            
-            # Use the placeholder to draw the table
-            # The key including flip_count ensures no caching "ghosts"
-            table_placeholder.dataframe(
-                results_df.drop(columns=["RawSaving"]), 
-                use_container_width=True, 
-                hide_index=True,
-                key=f"split_table_run_{st.session_state.flip_count}"
-            )
-            st.success(f"Found {len(results)} split ticket opportunities.")
+            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
+            st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
-            table_placeholder.info("No split tickets found for this direction.")
+            st.info("No split tickets found for these ticket types. :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
