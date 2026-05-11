@@ -97,8 +97,7 @@ else:
         st.session_state.dest_val = old_o
         
         # Increment the counter to "kill" the old widgets and make new ones
-        st.session_state.flip_count += 3
-        st.cache_data.clear()
+        st.session_state.flip_count += 1
         st.rerun()
     
     # 7. Ticket Selection Logic
@@ -185,7 +184,15 @@ if origin and destination and ticket_filter:
 
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
+            
+            # ADDING A UNIQUE KEY HERE FIXES THE "STICKY" TABLE
+            st.dataframe(
+                results_df.drop(columns=["RawSaving"]), 
+                use_container_width=True, 
+                hide_index=True,
+                key=f"split_table_{st.session_state.flip_count}" 
+            )
+            
             st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
             st.info("No split tickets found for these ticket types. :)")
