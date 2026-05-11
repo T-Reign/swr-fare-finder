@@ -143,8 +143,7 @@ if origin and destination and ticket_filter:
         lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
-        
-       st.divider()
+        st.divider()
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
         # --- THE AUTOMATIC RERUN TABLE AREA ---
