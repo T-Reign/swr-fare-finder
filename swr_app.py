@@ -88,18 +88,18 @@ else:
         key=f"dest_box_{st.session_state.flip_count}"
     )
 
-    # 6. THE REVERSE BUTTON
+  # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
         # Swap the memory
-        old_o = origin
-        old_d = destination
+        old_o = st.session_state.origin_val
+        old_d = st.session_state.dest_val
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
         
-        # Increment the counter to "kill" the old widgets and make new ones
+        # This counter change forces the app to treat the next run as "new"
         st.session_state.flip_count += 1
         st.rerun()
-
+        
     st.sidebar.divider()
     
     # 7. Ticket Selection Logic
@@ -144,13 +144,15 @@ if origin and destination and ticket_filter:
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
-        st.divider()
-        # This label also needs to be dynamic!
+       st.divider()
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
-        possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
+        # --- THE AUTOMATIC RERUN TABLE AREA ---
+        table_placeholder = st.empty() # Create a fresh hole in the page
+        
         results = []
+        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)].copy()
+        possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
 
         for split_station in possible_splits:
             if split_station == destination or split_station == origin:
@@ -162,19 +164,14 @@ if origin and destination and ticket_filter:
             if not l1_data.empty and not l2_data.empty:
                 best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
                 best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
-                
                 total_split = best_l1['FARE'] + best_l2['FARE']
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
-                    # RE-APPLYING YOUR PREFERRED FORMATTING HERE:
-                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
-                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
-                    
                     results.append({
                         "Split At": split_station,
-                        "Leg 1": leg1_label,
-                        "Leg 2": leg2_label,
+                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']})",
+                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']})",
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
@@ -182,10 +179,18 @@ if origin and destination and ticket_filter:
 
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} split ticket opportunities :(")
+            
+            # Use the placeholder to draw the table
+            # The key including flip_count ensures no caching "ghosts"
+            table_placeholder.dataframe(
+                results_df.drop(columns=["RawSaving"]), 
+                use_container_width=True, 
+                hide_index=True,
+                key=f"split_table_run_{st.session_state.flip_count}"
+            )
+            st.success(f"Found {len(results)} split ticket opportunities.")
         else:
-            st.info("No split tickets found for these ticket types. :)")
+            table_placeholder.info("No split tickets found for this direction.")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
