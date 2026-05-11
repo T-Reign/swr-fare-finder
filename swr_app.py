@@ -97,7 +97,7 @@ else:
         st.session_state.dest_val = old_o
         
         # Increment the counter to "kill" the old widgets and make new ones
-        st.session_state.flip_count += 1
+        st.session_state.flip_count += 6
         st.rerun()
     
     # 7. Ticket Selection Logic
