@@ -90,18 +90,14 @@ else:
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # 1. Swap the memory
+        # Swap the memory
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
         
-        # 2. Increment the counter
+        # Increment the counter to "kill" the old widgets and make new ones
         st.session_state.flip_count += 1
-        
-        # 3. THE MAGIC LINE: This kills any "sticky" data memory
-        st.cache_data.clear() 
-        
         st.rerun()
 
     st.sidebar.divider()
@@ -119,9 +115,7 @@ else:
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
-    results = [] # Always start with a fresh, empty list!
-    
-    # ... the rest of your math ...
+    # 1. Determine the Baseline (Direct) Fare
     if lock_baseline:
         # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
@@ -188,17 +182,7 @@ if origin and destination and ticket_filter:
 
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            
-            # THE "FORCE REFRESH" TRICK
-            # By adding a key that changes every time you flip, 
-            # Streamlit is forced to re-render this table fresh.
-            st.dataframe(
-                results_df.drop(columns=["RawSaving"]), 
-                use_container_width=True, 
-                hide_index=True,
-                key=f"split_table_{st.session_state.flip_count}" 
-            )
-            
+            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
             st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
             st.info("No split tickets found for these ticket types. :)")
