@@ -90,17 +90,20 @@ else:
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # Swap the memory
+        # 1. Swap the memory values
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
         
-        # Increment the counter to "kill" the old widgets and make new ones
+        # 2. Increment the flip counter (this fixes the selectboxes)
         st.session_state.flip_count += 1
+        
+        # 3. Clear the cache for the calculation engine specifically
+        # This forces Section 3 to re-run the math from scratch
+        st.cache_data.clear() 
+        
         st.rerun()
-
-    st.sidebar.divider()
     
     # 7. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
