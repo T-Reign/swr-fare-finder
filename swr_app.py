@@ -119,7 +119,9 @@ else:
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
-    # 1. Determine the Baseline (Direct) Fare
+    results = [] # Always start with a fresh, empty list!
+    
+    # ... the rest of your math ...
     if lock_baseline:
         # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
