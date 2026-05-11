@@ -95,9 +95,11 @@ else:
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
+        st.session_state.origin_val = old_d
+        st.session_state.dest_val = old_o
         
         # Increment the counter to "kill" the old widgets and make new ones
-        st.session_state.flip_count += 6
+        st.session_state.flip_count += 1
         st.rerun()
     
     # 7. Ticket Selection Logic
