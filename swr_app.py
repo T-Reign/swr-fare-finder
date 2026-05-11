@@ -90,14 +90,18 @@ else:
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # Swap the memory
+        # 1. Swap the memory
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
         
-        # Increment the counter to "kill" the old widgets and make new ones
+        # 2. Increment the counter
         st.session_state.flip_count += 1
+        
+        # 3. THE MAGIC LINE: This kills any "sticky" data memory
+        st.cache_data.clear() 
+        
         st.rerun()
 
     st.sidebar.divider()
