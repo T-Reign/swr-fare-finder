@@ -99,6 +99,8 @@ else:
         # Increment the counter to "kill" the old widgets and make new ones
         st.session_state.flip_count += 1
         st.rerun()
+
+    st.sidebar.divider()
     
     # 7. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
@@ -108,11 +110,7 @@ else:
 
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
-    lock_baseline = st.sidebar.toggle(
-        "🔒 Lock Base Fare", 
-        key="lock_base_toggle",
-        help="When ON, the app compares split prices against the first ticket type in your list. When OFF, it compares against the cheapest available direct fare."
-    )
+    lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
     ticket_filter = [label.split(" (")[0] for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
@@ -147,22 +145,17 @@ if origin and destination and ticket_filter:
                   help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
+        # This label also needs to be dynamic!
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        # --- 1. FORCE RESET ---
-        # We define results as empty here to ensure no "ghost data" remains
-        results = [] 
-        
-        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)].copy()
-        
-        # --- 2. SELECT POSSIBLE SPLITS FOR THIS SPECIFIC ORIGIN ---
+        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
+        results = []
 
         for split_station in possible_splits:
             if split_station == destination or split_station == origin:
                 continue
             
-            # Find Leg 1 (Origin -> Split) and Leg 2 (Split -> Destination)
             l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == origin) & (filtered_df['DEST_CLEAN'] == split_station)]
             l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == split_station) & (filtered_df['DEST_CLEAN'] == destination)]
 
@@ -174,29 +167,35 @@ if origin and destination and ticket_filter:
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
+                    # RE-APPLYING YOUR PREFERRED FORMATTING HERE:
+                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+                    
                     results.append({
-                        "Direction": f"{origin} → {destination}", # NEW: Forces visual proof of direction
                         "Split At": split_station,
-                        "Leg 1": f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']})",
-                        "Leg 2": f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']})",
+                        "Leg 1": leg1_label,
+                        "Leg 2": leg2_label,
                         "Total Price": f"£{total_split:.2f}",
                         "Saving": f"£{saving:.2f}",
                         "RawSaving": saving
                     })
 
-        # --- 3. THE DISPLAY ---
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            # We use the flip_count key again just to be safe
+            
+            # THE "FORCE REFRESH" TRICK
+            # By adding a key that changes every time you flip, 
+            # Streamlit is forced to re-render this table fresh.
             st.dataframe(
                 results_df.drop(columns=["RawSaving"]), 
                 use_container_width=True, 
                 hide_index=True,
-                key=f"split_results_{st.session_state.flip_count}"
+                key=f"split_table_{st.session_state.flip_count}" 
             )
-            st.success(f"Found {len(results)} split ticket opportunities for {origin} to {destination}")
+            
+            st.success(f"Found {len(results)} split ticket opportunities :(")
         else:
-            st.info(f"No split tickets found for {origin} to {destination}. :)")
+            st.info("No split tickets found for these ticket types. :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
