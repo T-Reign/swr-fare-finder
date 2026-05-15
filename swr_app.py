@@ -130,7 +130,7 @@ if origin and destination and ticket_filter:
                                 (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
-        st.warning(f"No direct fare found for {origin} to {destination}.")
+        st.warning(f"No direct fare found from {origin} to {destination}.")
     else:
         # Get the cheapest version of the direct ticket
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
