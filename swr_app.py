@@ -106,7 +106,7 @@ else:
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = sorted([f"{str(row['TICKET_TYPE_DESCRIPTION']).strip()} ({str(row['TICKET_CODE']).strip()})" 
                              for _, row in ticket_data.iterrows() 
-                             if not ("Taelin" in str(row['TICKET_TYPE_DESCRIPTION']).upper() or str(row['TICKET_CODE']).startswith(('1', '2')))]) 
+                             if not ("Taelin" in str(row['TICKET_TYPE_DESCRIPTIONe']).upper() or str(row['TICKET_CODEe']).startswith(('1', '2')))]) 
 
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
