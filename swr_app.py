@@ -114,54 +114,94 @@ else:
     # This grabs what is INSIDE the brackets: the actual ticket code!
 ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
 
-# --- 3. THE CALCULATION ENGINE ---
+# --- 3. THE CALCULATION ENGINE (WITH ROUTING SEGMENTS) ---
 if origin and destination and ticket_filter:
+
+    # 🌟 MANAGER STEP: Define our core Line-of-Route sequences (The Train Tracks)
+    # You can add more to this list gradually!
+    SEQUENCES = {
+        "Main Line Via Woking": [
+            "LONDON WATERLOO", "CLAPHAM JUNCTION", "SURBITON", "WOKING", 
+            "BASINGSTOKE", "WINCHESTER", "EASTLEIGH", "SOUTHAMPTON CENTRAL", 
+            "BOURNEMOUTH", "WEYMOUTH"
+        ],
+        "Portsmouth Direct Line": [
+            "LONDON WATERLOO", "CLAPHAM JUNCTION", "SURBITON", "WOKING", 
+            "GUILDFORD", "HASLEMERE", "PETERSFIELD", "HAVANT", "PORTSMOUTH HARBOUR"
+        ],
+        "Cross Country Coastway (Not London)": [
+            "READING", "BASINGSTOKE", "WINCHESTER", "SOUTHAMPTON CENTRAL", 
+            "FAREHAM", "HAVANT", "PORTSMOUTH HARBOUR"
+        ]
+    }
+
     # 1. Determine the Baseline (Direct) Fare
     if lock_baseline:
         baseline_ticket = ticket_filter[0]
-        # Changed to TICKET_CODE!
         direct_df = df[(df['TICKET_CODE'] == baseline_ticket)]
     else:
-        # Changed to TICKET_CODE!
         direct_df = df[df['TICKET_CODE'].isin(ticket_filter)]
 
     # 2. FIND THE DIRECT ROW FOR THE CURRENT DIRECTION
-    # We use 'origin' and 'destination' directly from the selectboxes
     direct_fare_row = direct_df[(direct_df['ORIGIN_CLEAN'] == origin) & 
                                 (direct_df['DEST_CLEAN'] == destination)]
     
     if direct_fare_row.empty:
         st.warning(f"No direct fare found from {origin} to {destination}.")
     else:
-        # Get the cheapest version of the direct ticket
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
-        
-        # 🌟 GET THE CURRENT TICKET CODE TO USE FOR SPLITTING
         target_ticket_code = best_direct['TICKET_CODE']
+        
+        # 🌟 GRAB THE ROUTE DESCRIPTION (e.g., "ANY PERMITTED", "NOT LONDON", "VIA WOKING")
+        # If your data column has a slightly different name, change 'ROUTE_DESCRIPTION' to match it
+        route_desc = str(best_direct.get('ROUTE_DESCRIPTION', 'ANY PERMITTED')).upper()
         
         # 3. UPDATE THE HEADER AND METRIC
         st.subheader(f"Direct Journey: {origin} to {destination}")
         
         lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
-                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({target_ticket_code})")
+                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({target_ticket_code}) | Route: {route_desc}")
         
         st.divider()
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        # 🌟 EDIT 1: Find where we can split using the TICKET_CODE instead of description!
+        # 🌟🌟🌟 THE SMART GEOGRAPHY FILTER 🌟🌟🌟
+        # Figure out which of our Sequences are physically valid for this ticket's route rules
+        valid_split_stations = set()
+        
+        for seq_name, station_list in SEQUENCES.items():
+            seq_upper = [s.upper() for s in station_list]
+            
+            # Check if both our Origin and Destination exist on this specific track line
+            if origin.upper() in seq_upper and destination.upper() in seq_upper:
+                
+                # ROUTE RULE A: If the ticket says "NOT LONDON", skip any sequence containing London!
+                if "NOT LONDON" in route_desc and "LONDON WATERLOO" in seq_upper:
+                    continue
+                
+                # ROUTE RULE B: If it specifies a "VIA", make sure that station is actually in the sequence
+                if "VIA" in route_desc:
+                    # e.g., if route is "VIA WOKING", check if WOKING is in this track line
+                    via_station = route_desc.replace("VIA ", "").strip()
+                    if via_station not in seq_upper:
+                        continue
+                
+                # If it passed the rules, find the stations sitting physically between our start and end
+                idx1, idx2 = seq_upper.index(origin.upper()), seq_upper.index(destination.upper())
+                start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
+                
+                # Add these middle stations to our allowed split pool
+                valid_split_stations.update(station_list[start_idx+1:end_idx])
+
+        # Now search for splits ONLY using our geographically approved station pool
         filtered_df = df[df['TICKET_CODE'] == target_ticket_code]
-        possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
 
-        for split_station in possible_splits:
-            if split_station == destination or split_station == origin:
-                continue
-            
-            # 🌟 EDIT 2: Match the fares for Leg 1 & Leg 2 by TICKET_CODE instead of description!
-            l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == origin) & (filtered_df['DEST_CLEAN'] == split_station)]
-            l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == split_station) & (filtered_df['DEST_CLEAN'] == destination)]
+        for split_station in valid_split_stations:
+            l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'].str.upper() == origin.upper()) & (filtered_df['DEST_CLEAN'].str.upper() == split_station.upper())]
+            l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'].str.upper() == split_station.upper()) & (filtered_df['DEST_CLEAN'].str.upper() == destination.upper())]
 
             if not l1_data.empty and not l2_data.empty:
                 best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
@@ -186,9 +226,9 @@ if origin and destination and ticket_filter:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} split ticket opportunities :(")
+            st.success(f"Found {len(results)} geographically valid split opportunities :(")
         else:
-            st.info("No split tickets found for these ticket types. :)")
+            st.info("No valid line-of-route splits found for this ticket code tier. :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
