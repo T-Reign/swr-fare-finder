@@ -119,10 +119,10 @@ if origin and destination and ticket_filter:
     if lock_baseline:
         # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
-        direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
+        direct_df = df[(df['TICKET_CODE'] == baseline_ticket)]
     else:
         # Otherwise, we look at all selected types
-        direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
+        direct_df = df[df['TICKET_CODE'].isin(ticket_filter)]
 
     # 2. FIND THE DIRECT ROW FOR THE CURRENT DIRECTION
     # We use 'origin' and 'destination' directly from the selectboxes
@@ -148,7 +148,7 @@ if origin and destination and ticket_filter:
         # This label also needs to be dynamic!
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        filtered_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
+        filtered_df = df[df['TICKET_CODE'].isin(ticket_filter)]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
 
