@@ -136,18 +136,20 @@ if origin and destination and ticket_filter:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
+        # 🌟 GET THE CURRENT TICKET CODE TO USE FOR SPLITTING
+        target_ticket_code = best_direct['TICKET_CODE']
+        
         # 3. UPDATE THE HEADER AND METRIC
-        # This ensures the text physically changes from "London to Brock" to "Brock to London"
         st.subheader(f"Direct Journey: {origin} to {destination}")
         
         lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
-                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
+                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({target_ticket_code})")
         
         st.divider()
-        # This label also needs to be dynamic!
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
+        # 🌟 EDIT 1: Find where we can split using the TICKET_CODE instead of description!
         filtered_df = df[df['TICKET_CODE'] == target_ticket_code]
         possible_splits = filtered_df[filtered_df['ORIGIN_CLEAN'] == origin]['DEST_CLEAN'].unique()
         results = []
@@ -156,6 +158,7 @@ if origin and destination and ticket_filter:
             if split_station == destination or split_station == origin:
                 continue
             
+            # 🌟 EDIT 2: Match the fares for Leg 1 & Leg 2 by TICKET_CODE instead of description!
             l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == origin) & (filtered_df['DEST_CLEAN'] == split_station)]
             l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == split_station) & (filtered_df['DEST_CLEAN'] == destination)]
 
@@ -167,7 +170,6 @@ if origin and destination and ticket_filter:
                 saving = direct_fare - total_split
 
                 if saving > 0.01:
-                    # RE-APPLYING YOUR PREFERRED FORMATTING HERE:
                     leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
                     leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
                     
