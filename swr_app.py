@@ -111,18 +111,19 @@ else:
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
-    ticket_filter = [label.split(" (")[0] for label in selected_labels]
+    # This grabs what is INSIDE the brackets: the actual ticket code!
+ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE ---
 if origin and destination and ticket_filter:
     # 1. Determine the Baseline (Direct) Fare
     if lock_baseline:
-        # If locked, we only look at the VERY FIRST ticket type in your multiselect list
         baseline_ticket = ticket_filter[0]
-        direct_df = df[(df['TICKET_TYPE_DESCRIPTION'] == baseline_ticket)]
+        # Changed to TICKET_CODE!
+        direct_df = df[(df['TICKET_CODE'] == baseline_ticket)]
     else:
-        # Otherwise, we look at all selected types
-        direct_df = df[df['TICKET_TYPE_DESCRIPTION'].isin(ticket_filter)]
+        # Changed to TICKET_CODE!
+        direct_df = df[df['TICKET_CODE'].isin(ticket_filter)]
 
     # 2. FIND THE DIRECT ROW FOR THE CURRENT DIRECTION
     # We use 'origin' and 'destination' directly from the selectboxes
