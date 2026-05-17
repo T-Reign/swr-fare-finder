@@ -136,16 +136,13 @@ if origin and destination and ticket_filter:
         best_direct = direct_fare_row.loc[direct_fare_row['FARE'].idxmin()]
         direct_fare = best_direct['FARE']
         
-        # Grab the exact TICKET_CODE of the direct ticket profile we are evaluating
-        target_ticket_code = best_direct['TICKET_CODE']
-        
         # 3. UPDATE THE HEADER AND METRIC
         # This ensures the text physically changes from "London to Brock" to "Brock to London"
         st.subheader(f"Direct Journey: {origin} to {destination}")
         
         lock_status = " (LOCKED)" if lock_baseline else ""
         st.metric(f"Direct Base Fare{lock_status}", f"£{direct_fare:.2f}", 
-                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({target_ticket_code})")
+                  help=f"Reference: {best_direct['TICKET_TYPE_DESCRIPTION']} ({best_direct['TICKET_CODE']})")
         
         st.divider()
         # This label also needs to be dynamic!
@@ -159,15 +156,8 @@ if origin and destination and ticket_filter:
             if split_station == destination or split_station == origin:
                 continue
             
-            # CRITICAL CHANGE HERE: Instead of filtering just by description, we force 
-            # the legs to match the target_ticket_code of the direct fare above!
-            l1_data = df[(df['ORIGIN_CLEAN'] == origin) & 
-                         (df['DEST_CLEAN'] == split_station) & 
-                         (df['TICKET_CODE'] == target_ticket_code)]
-                         
-            l2_data = df[(df['ORIGIN_CLEAN'] == split_station) & 
-                         (df['DEST_CLEAN'] == destination) & 
-                         (df['TICKET_CODE'] == target_ticket_code)]
+            l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == origin) & (filtered_df['DEST_CLEAN'] == split_station)]
+            l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'] == split_station) & (filtered_df['DEST_CLEAN'] == destination)]
 
             if not l1_data.empty and not l2_data.empty:
                 best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
