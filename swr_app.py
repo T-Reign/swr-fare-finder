@@ -120,10 +120,60 @@ if origin and destination and ticket_filter:
     # 🌟 MANAGER STEP: Define our core Line-of-Route sequences (The Train Tracks)
     # You can add more to this list gradually!
     SEQUENCES = {
-        "Main Line Via Woking": [
-            "LONDON WATERLOO", "CLAPHAM JUNCTION", "SURBITON", "WOKING", 
-            "BASINGSTOKE", "WINCHESTER", "EASTLEIGH", "SOUTHAMPTON CENTRAL", 
-            "BOURNEMOUTH", "WEYMOUTH"
+        "South Western Main Line Via Woking": [
+            "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
+            "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Eastleigh", "Shawford", "Winchester", 
+            "Micheldever", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Walton-On-Thames", "Hersham", "Esher", "Surbiton", "Berrylands", "New Malden",
+            "Raynes Park", "Wimbledon", "Earlsfield", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "West of England Line Via Woking": [
+            "Exeter St Davids", "Exeter Central", "Pinhoe", "Cranbrook", "Whimple", "Feniton", "Honiton", "Axminster", "Crewkerne", "Yeovil Junction", "Sherbourne", "Templecombe", "Gillingham (Dorset)", "Tisbury", "Salisbury", "Grateley", "Andover",
+            "Whitchurch (Hants)", "Overton", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Walton-On-Thames", "Hersham", "Esher", "Surbiton", "Berrylands", "New Malden",
+            "Raynes Park", "Wimbledon", "Earlsfield", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Reading Line Via Twickenham": [
+            "Reading", "Earley", "Winnersh Triangle", "Winnersh", "Wokingham", "Bracknell", "Martins Heron", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Whitton", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+         "Reading Line Via Brentford": [
+            "Reading", "Earley", "Winnersh Triangle", "Winnersh", "Wokingham", "Bracknell", "Martins Heron", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Hounslow", "Isleworth", "Syon Lane", "Brentford",
+             "Kew Bridge", "Chiswick", "Barnes Bridge", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Winsdor Line Via Brentford": [
+            "Windsor & Eton Riverside", "Datchet", "Sunneymeads", "Wraysbury", "Staines", "Ashford (Surrey)", "Feltham", "Hounslow", "Isleworth", "Syon Lane", "Brentford",
+             "Kew Bridge", "Chiswick", "Barnes Bridge", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Windsor Line Via Twickenham": [
+            "Windsor & Eton Riverside", "Datchet", "Sunneymeads", "Wraysbury", "Staines", "Ashford (Surrey)", "Feltham", "Whitton", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+         "Weybridge Line Via Twickenham": [
+            "Weybridge", "Addlestone", "Chertsey", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Whitton", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+         "Weybridge Line Via Brentford": [
+            "Weybridge", "Addlestone", "Chertsey", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Hounslow", "Isleworth", "Syon Lane", "Brentford",
+            "Kew Bridge", "Chiswick", "Barnes Bridge", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Shepperton Line Via Twickenham": [
+            "Shepperton", "Upper Halliford", "Sunbury", "Kempton Park", "Hampton (London)", "Fulwell", "Strawberry Hill", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Shepperton Line Via Kingston": [
+            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlsfield", "Wimbledon", "Raynes Park", "New Malden", "Norbiton", "Kingston", "Hampton Wick", "Teddington", "Fulwell", "Hampton (London)", "Kempton Park", "Sunbury", "Upper Halliford",
+            "Shepperton"
+        ],
+        "Kingston Loop Via Twickenham": [
+            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlsfield", "Wimbledon", "Raynes Park", "New Malden", "Norbiton", "Kingston", "Hampton Wick", "Teddington", "Strawberry Hill", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Bagshot Line Via Twickenham": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Frimley", "Camberley", "Bagshot", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Whitton", "Twickenham", "St Margarets (London)",
+            "Richmond (London)", "North Sheen", "Mortlake", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+         "Bagshot Line Via Brentford": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Frimley", "Camberley", "Bagshot", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Hounslow", "Isleworth", "Syon Lane", "Brentford",
+             "Kew Bridge", "Chiswick", "Barnes Bridge", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
         ],
         "Portsmouth Direct Line": [
             "LONDON WATERLOO", "CLAPHAM JUNCTION", "SURBITON", "WOKING", 
