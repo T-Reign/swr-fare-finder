@@ -343,7 +343,7 @@ if origin and destination and ticket_filter:
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
             st.success(f"Found {len(results)} split opportunities :(")
         else:
-            st.info("No valid line-of-route splits found for this ticket code tier. :)")
+            st.info("No valid line-of-route splits found for this ticket code tier.")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
