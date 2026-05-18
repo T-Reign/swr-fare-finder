@@ -276,7 +276,7 @@ if origin and destination and ticket_filter:
         if results:
             results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
             st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} geographically valid split opportunities :(")
+            st.success(f"Found {len(results)} split opportunities :(")
         else:
             st.info("No valid line-of-route splits found for this ticket code tier. :)")
             
