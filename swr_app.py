@@ -269,8 +269,8 @@ if origin and destination and ticket_filter:
         target_ticket_code = best_direct['TICKET_CODE']
         
         # 🌟 GRAB THE ROUTE DESCRIPTION (e.g., "ANY PERMITTED", "NOT LONDON", "VIA WOKING")
-        # If your data column has a slightly different name, change 'ROUTE_DESCRIPTION' to match it
-        route_desc = str(best_direct.get('ROUTE_DESCRIPTION', 'ANY PERMITTED')).upper()
+        # The .strip() here deletes all those invisible spaces at the front and back!
+        route_desc = str(best_direct.get('ROUTE_DESCRIPTION', 'ANY PERMITTED')).strip().upper()
         
         # 3. UPDATE THE HEADER AND METRIC
         st.subheader(f"Direct Journey: {origin} to {destination}")
@@ -283,32 +283,44 @@ if origin and destination and ticket_filter:
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
         # 🌟🌟🌟 THE SMART GEOGRAPHY FILTER 🌟🌟🌟
-        # Figure out which of our Sequences are physically valid for this ticket's route rules
         valid_split_stations = set()
         
         for seq_name, station_list in SEQUENCES.items():
-            seq_upper = [s.upper() for s in station_list]
+            # Force everything to clean, stripped uppercase arrays to eliminate hidden spaces
+            seq_upper = [s.strip().upper() for s in station_list]
             
             # Check if both our Origin and Destination exist on this specific track line
-            if origin.upper() in seq_upper and destination.upper() in seq_upper:
+            if origin.strip().upper() in seq_upper and destination.strip().upper() in seq_upper:
                 
-                # ROUTE RULE A: If the ticket says "NOT LONDON", skip any sequence containing London!
+                # RULE A: If the ticket says "NOT LONDON", skip any sequence containing London!
                 if "NOT LONDON" in route_desc and "LONDON WATERLOO" in seq_upper:
                     continue
                 
-                # ROUTE RULE B: If it specifies a "VIA", make sure that station is actually in the sequence
+                # RULE B: Smart 'VIA' substring matching
                 if "VIA" in route_desc:
-                    # e.g., if route is "VIA WOKING", check if WOKING is in this track line
-                    via_station = route_desc.replace("VIA ", "").strip()
-                    if via_station not in seq_upper:
-                        continue
+                    has_required_via = False
+                    for station in seq_upper:
+                        # Clean the station name text we are testing against
+                        clean_station = station.strip().upper()
+                        
+                        # Prevent checking the origin/destination themselves as a via point
+                        if clean_station == origin.strip().upper() or clean_station == destination.strip().upper():
+                            continue
+                            
+                        # If the station name (e.g. 'WOKING' or 'HAVANT') is found in our cleaned text, it's a match!
+                        if clean_station in route_desc:
+                            has_required_via = True
+                            break
+                    if not has_required_via:
+                        continue # Skip this sequence track line if none of its stations match the ticket's VIA text
                 
-                # If it passed the rules, find the stations sitting physically between our start and end
-                idx1, idx2 = seq_upper.index(origin.upper()), seq_upper.index(destination.upper())
+                # Extract the stations sitting physically between our start and end
+                idx1 = seq_upper.index(origin.strip().upper())
+                idx2 = seq_upper.index(destination.strip().upper())
                 start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
                 
                 # Add these middle stations to our allowed split pool
-                valid_split_stations.update(station_list[start_idx+1:end_idx])
+                valid_split_stations.update([station_list[i] for i in range(start_idx + 1, end_idx)])
 
         # Now search for splits ONLY using our geographically approved station pool
         filtered_df = df[df['TICKET_CODE'] == target_ticket_code]
