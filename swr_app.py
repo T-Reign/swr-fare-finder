@@ -272,23 +272,9 @@ if origin and destination and ticket_filter:
         for seq_name, station_list in SEQUENCES.items():
             seq_upper = [s.strip().upper() for s in station_list]
             
+           
+            # If both origin and destination are on this track line, grab everything in between!
             if origin.upper() in seq_upper and destination.upper() in seq_upper:
-                
-                if "NOT LONDON" in route_desc and "LONDON WATERLOO" in seq_upper:
-                    continue
-                
-                if "VIA" in route_desc:
-                    has_required_via = False
-                    for station in seq_upper:
-                        clean_station = station.strip().upper()
-                        if clean_station == origin.upper() or clean_station == destination.upper():
-                            continue
-                        if clean_station in route_desc:
-                            has_required_via = True
-                            break
-                    if not has_required_via:
-                        continue
-                
                 idx1, idx2 = seq_upper.index(origin.upper()), seq_upper.index(destination.upper())
                 start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
                 valid_split_stations.update(station_list[start_idx+1:end_idx])
