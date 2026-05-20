@@ -266,7 +266,7 @@ if origin and destination and ticket_filter:
         st.divider()
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
-        # 🌟🌟🌟 THE SMART GEOGRAPHY FILTER 🌟🌟🌟
+        # THE SMART GEOGRAPHY FILTER
         valid_split_stations = set()
         
         for seq_name, station_list in SEQUENCES.items():
@@ -279,7 +279,7 @@ if origin and destination and ticket_filter:
                 start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
                 valid_split_stations.update(station_list[start_idx+1:end_idx])
 
-        # 🌟🌟🌟 PRODUCT MIX MODIFICATION 🌟🌟🌟
+        #  PRODUCT MIX MODIFICATION 
         # Opened up from a single code restriction to allow full tier composition matching
         filtered_df = df[df['TICKET_CODE'].isin(ticket_filter)]
         results = []
