@@ -73,8 +73,6 @@ else:
     d_idx = all_stations.index(st.session_state.dest_val) if st.session_state.dest_val in all_stations else (1 if len(all_stations) > 1 else 0)
 
     # 5. STATION SELECTBOXES
-    # The key changes every time we flip (origin_box_0, origin_box_1, etc.)
-    # This forces Streamlit to refresh the widget completely.
     origin = st.sidebar.selectbox(
         "Origin Station", 
         all_stations, 
@@ -90,13 +88,10 @@ else:
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
-        # Swap the memory
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
-        
-        # Increment the counter to "kill" the old widgets and make new ones
         st.session_state.flip_count += 1
         st.rerun()
 
@@ -111,14 +106,13 @@ else:
     default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
     selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
-    # This grabs what is INSIDE the brackets: the actual ticket code!
+    
 ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
 
 # --- 3. THE CALCULATION ENGINE (WITH ROUTING SEGMENTS) ---
 if origin and destination and ticket_filter:
 
-    # 🌟 MANAGER STEP: Define our core Line-of-Route sequences (The Train Tracks)
-    # You can add more to this list gradually!
+    # SEQUENCES Matrix
     SEQUENCES = {
         "South Western Main Line Via Woking": [
             "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
@@ -197,16 +191,16 @@ if origin and destination and ticket_filter:
              "Kew Bridge", "Chiswick", "Barnes Bridge", "Barnes", "Putney", "Wandsworth Town", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
         ],
         "Portsmouth Direct Line": [
-            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
+            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlsfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
             "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ],
         "Portsmouth via Basingstoke Line": [
-            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
+            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlsfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
             "Brookwood", "Farnborough (Main)", "Fleet", "Winchfield", "Hook", "Basingstoke", "Micheldever", "Winchester", "Shawford", "Eastleigh", "Hedge End", "Botley", "Fareham", "Portchester", "Cosham", "Hilsea", "Fratton", "Portsmouth & Southsea", 
             "Portsmouth Harbour"
         ],
         "Alton Line": [
-            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
+            "London Waterloo", "Queenstown Road (Battersea)", "Clapham Junction", "Earlsfield", "Wimbledon", "Raynes Park", "New Malden", "Berrylands", "Surbiton", "Esher", "Hersham", "Walton-On-Thames", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", 
             "Brookwood", "Ash Vale", "Aldershot", "Farnham", "Bentley (Hants)", "Alton"
         ],
         "Reading Line to Alton via Ascot": [
@@ -225,15 +219,6 @@ if origin and destination and ticket_filter:
             "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Eastleigh", "Shawford", "Winchester", 
             "Micheldever", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
             "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
-        ],
-        "South Western Main Line & PDL": [
-            "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
-            "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Eastleigh", "Shawford", "Winchester", 
-            "Micheldever", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "Brookwood", "Ash Vale", "Aldershot", "Farnham", "Bentley (Hants)", "Alton"
-        ],
-        "West of England Line to Portsmouth Line via Woking": [
-            "Exeter St Davids", "Exeter Central", "Pinhoe", "Cranbrook", "Whimple", "Feniton", "Honiton", "Axminster", "Crewkerne", "Yeovil Junction", "Sherbourne", "Templecombe", "Gillingham (Dorset)", "Tisbury", "Salisbury", "Grateley", "Andover",
-            "Whitchurch (Hants)", "Overton", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "Brookwood", "Ash Vale", "Aldershot", "Farnham", "Bentley (Hants)", "Alton"
         ],
         "Alton & PDL Lines": [
             "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Brookwood", "Woking", "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
@@ -268,9 +253,8 @@ if origin and destination and ticket_filter:
         direct_fare = best_direct['FARE']
         target_ticket_code = best_direct['TICKET_CODE']
         
-        # 🌟 GRAB THE ROUTE DESCRIPTION (e.g., "ANY PERMITTED", "NOT LONDON", "VIA WOKING")
-        # If your data column has a slightly different name, change 'ROUTE_DESCRIPTION' to match it
-        route_desc = str(best_direct.get('ROUTE_DESCRIPTION', 'ANY PERMITTED')).upper()
+        # Grab route description and scrub whitespace
+        route_desc = str(best_direct.get('ROUTE_DESCRIPTION', 'ANY PERMITTED')).strip().upper()
         
         # 3. UPDATE THE HEADER AND METRIC
         st.subheader(f"Direct Journey: {origin} to {destination}")
@@ -283,35 +267,35 @@ if origin and destination and ticket_filter:
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
         # 🌟🌟🌟 THE SMART GEOGRAPHY FILTER 🌟🌟🌟
-        # Figure out which of our Sequences are physically valid for this ticket's route rules
         valid_split_stations = set()
         
         for seq_name, station_list in SEQUENCES.items():
-            seq_upper = [s.upper() for s in station_list]
+            seq_upper = [s.strip().upper() for s in station_list]
             
-            # Check if both our Origin and Destination exist on this specific track line
             if origin.upper() in seq_upper and destination.upper() in seq_upper:
                 
-                # ROUTE RULE A: If the ticket says "NOT LONDON", skip any sequence containing London!
                 if "NOT LONDON" in route_desc and "LONDON WATERLOO" in seq_upper:
                     continue
                 
-                # ROUTE RULE B: If it specifies a "VIA", make sure that station is actually in the sequence
                 if "VIA" in route_desc:
-                    # e.g., if route is "VIA WOKING", check if WOKING is in this track line
-                    via_station = route_desc.replace("VIA ", "").strip()
-                    if via_station not in seq_upper:
+                    has_required_via = False
+                    for station in seq_upper:
+                        clean_station = station.strip().upper()
+                        if clean_station == origin.upper() or clean_station == destination.upper():
+                            continue
+                        if clean_station in route_desc:
+                            has_required_via = True
+                            break
+                    if not has_required_via:
                         continue
                 
-                # If it passed the rules, find the stations sitting physically between our start and end
                 idx1, idx2 = seq_upper.index(origin.upper()), seq_upper.index(destination.upper())
                 start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
-                
-                # Add these middle stations to our allowed split pool
                 valid_split_stations.update(station_list[start_idx+1:end_idx])
 
-        # Now search for splits ONLY using our geographically approved station pool
-        filtered_df = df[df['TICKET_CODE'] == target_ticket_code]
+        # 🌟🌟🌟 PRODUCT MIX MODIFICATION 🌟🌟🌟
+        # Opened up from a single code restriction to allow full tier composition matching
+        filtered_df = df[df['TICKET_CODE'].isin(ticket_filter)]
         results = []
 
         for split_station in valid_split_stations:
@@ -347,5 +331,4 @@ if origin and destination and ticket_filter:
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
-    # Showing the TICKET_CODE column here too for consistency
     st.dataframe(df[(df['ORIGIN_CLEAN'] == origin) | (df['DEST_CLEAN'] == destination)])
