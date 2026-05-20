@@ -214,6 +214,10 @@ if origin and destination and ticket_filter:
             "Whitchurch (Hants)", "Overton", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
             "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ],
+        "West of England Line to Alton Line via Woking": [
+            "Exeter St Davids", "Exeter Central", "Pinhoe", "Cranbrook", "Whimple", "Feniton", "Honiton", "Axminster", "Crewkerne", "Yeovil Junction", "Sherbourne", "Templecombe", "Gillingham (Dorset)", "Tisbury", "Salisbury", "Grateley", "Andover",
+            "Whitchurch (Hants)", "Overton", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "Brookwood", "Ash Vale", "Aldershot", "Farnham", "Bentley (Hants)", "Alton"
+        ],
         "South Western Main Line & PDL": [
             "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
             "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Eastleigh", "Shawford", "Winchester", 
@@ -228,7 +232,7 @@ if origin and destination and ticket_filter:
             "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash", "Wanborough", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
             "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ],
-        "Weymouth to Portsmouth Line": [
+        "Weymouth to Portsmouth Line via Fratton": [
             "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
             "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Bitterne", "Woolston", "Sholing", "Netley", "Hamble", "Bursledon", "Swanwick", "Fareham", "Portchester", "Cosham", 
             "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
