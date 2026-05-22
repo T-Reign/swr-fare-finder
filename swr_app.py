@@ -152,7 +152,7 @@ if origin and destination and ticket_filter:
             "Raynes Park", "Wimbledon", "Earlsfield", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
         ],
         "Romsey Rounders to Waterloo Via Winchester": [
-            "Dean", "Mottisfont & Dunbridge", "Romsey", "Redbridge", "Millbrook", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Chandler's Ford", "Eastleigh", "Shawford", "Winchester", 
+            "Dean", "Mottisfont & Dunbridge", "Romsey", "Redbridge", "Millbrook", "Southampton Central", "St Denys", "Swaythling", "Southampton Airport Parkway", "Eastleigh", "Shawford", "Winchester", 
             "Micheldever", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Walton-On-Thames", "Hersham", "Esher", "Surbiton", "Berrylands", "New Malden",
             "Raynes Park", "Wimbledon", "Earlsfield", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
         ],
@@ -165,6 +165,9 @@ if origin and destination and ticket_filter:
             "Chandler's Ford", "Romsey", "Mottisfont & Dunbridge", "Dean", "Salisbury", "Grateley", "Andover",
             "Whitchurch (Hants)", "Overton", "Basingstoke", "Hook", "Winchfield", "Fleet", "Farnborough (Main)", "Brookwood", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Walton-On-Thames", "Hersham", "Esher", "Surbiton", "Berrylands", "New Malden",
             "Raynes Park", "Wimbledon", "Earlsfield", "Clapham Junction", "Queenstown Road (Battersea)", "London Waterloo"
+        ],
+        "Romsey Rounders to Eastleigh": [
+            "Chandler's Ford", "Eastleigh"
         ],
         "Reading Line Via Twickenham": [
             "Reading", "Earley", "Winnersh Triangle", "Winnersh", "Wokingham", "Bracknell", "Martins Heron", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Egham", "Staines", "Ashford (Surrey)", "Feltham", "Whitton", "Twickenham", "St Margarets (London)",
