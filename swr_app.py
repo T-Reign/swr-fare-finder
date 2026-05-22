@@ -62,6 +62,8 @@ if 'origin_val' not in st.session_state:
     st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_val' not in st.session_state:
     st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
+if 'chosen_tickets' not in st.session_state:
+    st.session_state.chosen_tickets = None
 
 # 3. Define the Gatekeeper
 if not all_stations:
@@ -103,8 +105,17 @@ else:
                              for _, row in ticket_data.iterrows() 
                              if not str(row['TICKET_CODE']).startswith(('1', '2'))]) 
 
-    default_vals = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
-    selected_labels = st.sidebar.multiselect("Ticket Types", options=ticket_options, default=default_vals, key="ticket_type_search")
+    # 🌟 FIX: If nothing is stored in memory yet, set the default to the first two options
+    if st.session_state.chosen_tickets is None:
+        st.session_state.chosen_tickets = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
+
+    # Link the multiselect directly to our session state memory key
+    selected_labels = st.sidebar.multiselect(
+        "Ticket Types", 
+        options=ticket_options, 
+        key="chosen_tickets"
+    )
+    
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
     
 ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
