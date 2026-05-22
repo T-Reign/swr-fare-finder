@@ -429,6 +429,8 @@ if origin and destination and ticket_filter:
                                 # Also include the interchange station itself as a valid split point!
                                 valid_split_stations.add(interchange)
 
+        # Clean up any potential casing duplicates across the entire pool
+        valid_split_stations = {s.strip().title().replace(" And ", " & ").replace("(Hants)", "(Hants)").replace("(Dorset)", "(Dorset)").replace("(London)", "(London)") for s in valid_split_stations}
         #  PRODUCT MIX MODIFICATION 
         # Opened up from a single code restriction to allow full tier composition matching
         filtered_df = df[df['TICKET_CODE'].isin(ticket_filter)]
