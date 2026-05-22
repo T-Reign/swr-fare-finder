@@ -383,17 +383,47 @@ if origin and destination and ticket_filter:
         st.subheader(f"Potential Split Opportunities: {origin} to {destination}")
 
         # THE SMART GEOGRAPHY FILTER
+        # 🌟🌟🌟 UPDATED GEOGRAPHY FILTER FOR TRANSFER JOURNEYS 🌟🌟🌟
         valid_split_stations = set()
-        
+        direct_match_found = False
+
+        # Leg 1: Look for direct single-sequence paths
         for seq_name, station_list in SEQUENCES.items():
             seq_upper = [s.strip().upper() for s in station_list]
-            
-           
-            # If both origin and destination are on this track line, grab everything in between!
             if origin.upper() in seq_upper and destination.upper() in seq_upper:
                 idx1, idx2 = seq_upper.index(origin.upper()), seq_upper.index(destination.upper())
                 start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
                 valid_split_stations.update(station_list[start_idx+1:end_idx])
+                direct_match_found = True
+
+        # Leg 2: If it's a cross-country route, find a connecting interchange station
+        if not direct_match_found:
+            for seq1_name, seq1_list in SEQUENCES.items():
+                seq1_upper = [s.strip().upper() for s in seq1_list]
+                if origin.upper() in seq1_upper:
+            
+                    for seq2_name, seq2_list in SEQUENCES.items():
+                        seq2_upper = [s.strip().upper() for s in seq2_list]
+                        if destination.upper() in seq2_upper:
+                    
+                            # Find common stations where these two master tracks cross
+                            common_interchanges = set(seq1_upper).intersection(set(seq2_upper))
+                    
+                            for interchange in common_interchanges:
+                                # Extract stations from Origin to Interchange
+                                idx_orig = seq1_upper.index(origin.upper())
+                                idx_int1 = seq1_upper.index(interchange)
+                                s1, e1 = min(idx_orig, idx_int1), max(idx_orig, idx_int1)
+                                valid_split_stations.update(seq1_list[s1+1:e1])
+                        
+                                # Extract stations from Interchange to Destination
+                                idx_int2 = seq2_upper.index(interchange)
+                                idx_dest = seq2_upper.index(destination.upper())
+                                s2, e2 = min(idx_int2, idx_dest), max(idx_int2, idx_dest)
+                                valid_split_stations.update(seq2_list[s2+1:e2])
+                        
+                                # Also include the interchange station itself as a valid split point!
+                                valid_split_stations.add(interchange)
 
         #  PRODUCT MIX MODIFICATION 
         # Opened up from a single code restriction to allow full tier composition matching
