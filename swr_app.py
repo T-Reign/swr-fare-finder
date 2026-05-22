@@ -369,7 +369,7 @@ if origin and destination and ticket_filter:
             "Worplesdon", "Guildford", "London Road (Guildford)", "Clandon", "Horsley", "Effingham Junction", "Bookham", "Leatherhead", "Box Hill & Westhumble", "Dorking"
         ],
         "Weymouth to Portsmouth Line via Fratton": [
-            "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Lymington Pier", "Lymington Town", "Sway",
+            "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
             "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Bitterne", "Woolston", "Sholing", "Netley", "Hamble", "Bursledon", "Swanwick", "Fareham", "Portchester", 
             "Cosham", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ]
