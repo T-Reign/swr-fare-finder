@@ -241,8 +241,8 @@ if origin and destination and ticket_filter:
             "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ],
         "Bracknell to PDL Lines via Addlestone": [
-            "Bracknell", "Martins Heron", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Addlestone", "Chertsey", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
-            "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
+            "Bracknell", "Martins Heron", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Addlestone", "Chertsey", "Weybridge", "Byfleet & New Haw", "West Byfleet", "Woking", "Worplesdon", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)",
+            "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", "Rowlands Castle", "Havant", "Bedhampton", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ],
         "Reading to PDL Line via Blackwater": [
             "Reading", "Earley", "Winnersh Triangle", "Winnersh", "Wokingham", "Ash", "Wanborough", "Guildford", "Farncombe", "Godalming", "Milford (Surrey)", "Witley", "Haslemere", "Liphook", "Liss", "Petersfield", 
@@ -294,10 +294,40 @@ if origin and destination and ticket_filter:
         "Alton to Dorking via Guildford": [
             "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash", "Wanborough", "Guildford", "London Road (Guildford)", "Clandon", "Horsley", "Effingham Junction", "Bookham", "Leatherhead", "Box Hill & Westhumble", "Dorking"
         ],
+        "Alton to Chertsey via Brookwood": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Brookwood", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Addlestone", "Chertsey"
+        ],
+        "Alton to Addlestone via Ascot": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Frimley", "Camberley", "Bagshot", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Chertsey", "Addlestone"
+        ],
+        "Ash to Chertsey via Guildford": [
+            "Ash", "Wanborough", "Guildford", "Worplesdon", "Woking", "West Byfleet", "Byfleet & New Haw", "Weybridge", "Addlestone", "Chertsey"
+        ],
+        "Wanborough to Addlestone via Bagshot": [
+            "Wanborough", "Ash", "Aldershot", "Ash Vale", "Frimley", "Camberley", "Bagshot", "Ascot", "Sunningdale", "Longcross", "Virginia Water", "Chertsey", "Addlestone"
+        ],
+        "Worplesdon to Alton via Guildford": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash", "Wanborough", "Guildford", "Worplesdon"
+        ],
+        "Worplesdon to Alton via Brookwood": [
+            "Alton", "Bentley (Hants)", "Farnham", "Aldershot", "Ash Vale", "Brookwood", "Woking", "Worplesdon"
+        ],
+        "Worplesdon to Ascot via Guildford": [
+            "Ascot", "Bagshot", "Camberley", "Frimley", "Ash Vale", "Aldershot", "Ash", "Wanborough", "Guildford", "Worplesdon"
+        ],
+        "Worplesdon to Ascot via Brookwood": [
+            "Ascot", "Bagshot", "Camberley", "Frimley", "Ash Vale", "Brookwood", "Woking", "Worplesdon"
+        ],
+        "Worplesdon to Epsom via Aldershot": [
+            "Worplesdon", "Guildford", "London Road (Guildford)", "Clandon", "Horsley", "Effingham Junction", "Bookham", "Leatherhead", "Ashtead", "Epsom"
+        ],
+        "Worplesdon to Dorking via Aldershot": [
+            "Worplesdon", "Guildford", "London Road (Guildford)", "Clandon", "Horsley", "Effingham Junction", "Bookham", "Leatherhead", "Box Hill & Westhumble", "Dorking"
+        ],
         "Weymouth to Portsmouth Line via Fratton": [
             "Weymouth", "Upwey", "Dorchester South", "Moreton (Dorset)", "Wool", "Wareham", "Holton Heath", "Hamworthy", "Poole", "Parkstone", "Branksome", "Bournemouth", "Pokesdown", "Christchurch", "Hinton Admiral", "New Milton", "Sway",
-            "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Bitterne", "Woolston", "Sholing", "Netley", "Hamble", "Bursledon", "Swanwick", "Fareham", "Portchester", "Cosham", 
-            "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
+            "Brockenhurst", "Beaulieu Road", "Ashurst New Forest", "Totton", "Redbridge (Hants)", "Millbrook (Hants)", "Southampton Central", "St Denys", "Bitterne", "Woolston", "Sholing", "Netley", "Hamble", "Bursledon", "Swanwick", "Fareham", "Portchester", 
+            "Cosham", "Hilsea", "Fratton", "Portsmouth & Southsea", "Portsmouth Harbour"
         ]
     }
 
