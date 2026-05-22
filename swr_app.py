@@ -62,8 +62,10 @@ if 'origin_val' not in st.session_state:
     st.session_state.origin_val = "London Waterloo" if "London Waterloo" in all_stations else all_stations[0]
 if 'dest_val' not in st.session_state:
     st.session_state.dest_val = all_stations[1] if len(all_stations) > 1 else all_stations[0]
-if 'chosen_tickets' not in st.session_state:
-    st.session_state.chosen_tickets = None
+
+# 🌟 FIX: Use a unique state variable name to avoid locking conflicts
+if 'selected_tickets_memory' not in st.session_state:
+    st.session_state.selected_tickets_memory = None
 
 # 3. Define the Gatekeeper
 if not all_stations:
@@ -90,30 +92,38 @@ else:
 
     # 6. THE REVERSE BUTTON
     if st.sidebar.button("⇅ Reverse Journey"):
+        # 🌟 SAVE CURRENT SELECTIONS TO MEMORY BEFORE FLIPPING
+        if "ticket_type_search" in st.session_state:
+            st.session_state.selected_tickets_memory = st.session_state.ticket_type_search
+
+        # Swap the station memory
         old_o = origin
         old_d = destination
         st.session_state.origin_val = old_d
         st.session_state.dest_val = old_o
+        
+        # Force the widget recreation
         st.session_state.flip_count += 1
         st.rerun()
 
     st.sidebar.divider()
     
-    # 7. Ticket Selection Logic
+   # 7. Ticket Selection Logic
     ticket_data = df[['TICKET_TYPE_DESCRIPTION', 'TICKET_CODE']].drop_duplicates().dropna()
     ticket_options = sorted([f"{str(row['TICKET_TYPE_DESCRIPTION']).strip()} ({str(row['TICKET_CODE']).strip()})" 
                              for _, row in ticket_data.iterrows() 
                              if not str(row['TICKET_CODE']).startswith(('1', '2'))]) 
 
-    # 🌟 FIX: If nothing is stored in memory yet, set the default to the first two options
-    if st.session_state.chosen_tickets is None:
-        st.session_state.chosen_tickets = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
+    # 🌟 FIX: If memory is empty, set your standard fallback default values
+    if st.session_state.selected_tickets_memory is None:
+        st.session_state.selected_tickets_memory = ticket_options[:2] if len(ticket_options) >= 2 else ticket_options
 
-    # Link the multiselect directly to our session state memory key
+    # Pass the memory directly into 'default' and use a clean key string
     selected_labels = st.sidebar.multiselect(
         "Ticket Types", 
         options=ticket_options, 
-        key="chosen_tickets"
+        default=st.session_state.selected_tickets_memory, 
+        key="ticket_type_search"
     )
     
     lock_baseline = st.sidebar.toggle("🔒 Lock Base Fare", key="lock_base_toggle")
