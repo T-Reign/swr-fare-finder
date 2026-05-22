@@ -421,6 +421,10 @@ if origin and destination and ticket_filter:
                                 idx_dest = seq2_upper.index(destination.upper())
                                 s2, e2 = min(idx_int2, idx_dest), max(idx_int2, idx_dest)
                                 valid_split_stations.update(seq2_list[s2+1:e2])
+                                
+                                # 🌟 FIX: Find the original mixed-case station name instead of the ALL CAPS version!
+                                original_case_interchange = seq2_list[idx_int2]
+                                valid_split_stations.add(original_case_interchange)
                         
                                 # Also include the interchange station itself as a valid split point!
                                 valid_split_stations.add(interchange)
