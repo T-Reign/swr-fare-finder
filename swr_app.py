@@ -470,44 +470,44 @@ if origin and destination and ticket_filter:
             l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'].str.upper() == split_station.upper()) & (filtered_df['DEST_CLEAN'].str.upper() == destination.upper())]
 
             if full_combination_mode:
-    for _, l1 in l1_data.iterrows():
-        for _, l2 in l2_data.iterrows():
+                for _, l1 in l1_data.iterrows():
+                    for _, l2 in l2_data.iterrows():
 
-            total_split = l1['FARE'] + l2['FARE']
-            saving = direct_fare - total_split
+                        total_split = l1['FARE'] + l2['FARE']
+                        saving = direct_fare - total_split
 
-            if saving > 0.01:
-                leg1_label = f"£{l1['FARE']:.2f} ({l1['TICKET_TYPE_DESCRIPTION']}/{l1['TICKET_CODE']})"
-                leg2_label = f"£{l2['FARE']:.2f} ({l2['TICKET_TYPE_DESCRIPTION']}/{l2['TICKET_CODE']})"
+                        if saving > 0.01:
+                            leg1_label = f"£{l1['FARE']:.2f} ({l1['TICKET_TYPE_DESCRIPTION']}/{l1['TICKET_CODE']})"
+                            leg2_label = f"£{l2['FARE']:.2f} ({l2['TICKET_TYPE_DESCRIPTION']}/{l2['TICKET_CODE']})"
 
-                results.append({
-                    "Split At": split_station,
-                    "Leg 1": leg1_label,
-                    "Leg 2": leg2_label,
-                    "Total Price": f"£{total_split:.2f}",
-                    "Saving": f"£{saving:.2f}",
-                    "RawSaving": saving
+                            results.append({
+                                "Split At": split_station,
+                                "Leg 1": leg1_label,
+                                "Leg 2": leg2_label,
+                                "Total Price": f"£{total_split:.2f}",
+                                "Saving": f"£{saving:.2f}",
+                                "RawSaving": saving
+                            })
+
+            else:
+                best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
+                best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
+
+                total_split = best_l1['FARE'] + best_l2['FARE']
+                saving = direct_fare - total_split
+
+                if saving > 0.01:
+                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+
+                    results.append({
+                        "Split At": split_station,
+                        "Leg 1": leg1_label,
+                        "Leg 2": leg2_label,
+                        "Total Price": f"£{total_split:.2f}",
+                        "Saving": f"£{saving:.2f}",
+                        "RawSaving": saving
                 })
-
-else:
-    best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
-    best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
-
-    total_split = best_l1['FARE'] + best_l2['FARE']
-    saving = direct_fare - total_split
-
-    if saving > 0.01:
-        leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
-        leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
-
-        results.append({
-            "Split At": split_station,
-            "Leg 1": leg1_label,
-            "Leg 2": leg2_label,
-            "Total Price": f"£{total_split:.2f}",
-            "Saving": f"£{saving:.2f}",
-            "RawSaving": saving
-        })
 
         if results:
     results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
