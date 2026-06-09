@@ -510,15 +510,15 @@ if origin and destination and ticket_filter:
                 })
 
         if results:
-    results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
+            results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
 
-    if full_combination_mode:
-        results_df = results_df.drop_duplicates(subset=["Split At", "Leg 1", "Leg 2"])
+            if full_combination_mode:
+                results_df = results_df.drop_duplicates(subset=["Split At", "Leg 1", "Leg 2"])
 
-    st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-    st.success(f"Found {len(results_df)} split opportunities")
-else:
-    st.info("No Split-Ticketing Opportunities Found :)")
+            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
+            st.success(f"Found {len(results_df)} split opportunities")
+        else:
+            st.info("No Split-Ticketing Opportunities Found :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
