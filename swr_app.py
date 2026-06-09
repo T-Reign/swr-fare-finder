@@ -130,6 +130,11 @@ else:
     
 ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
 
+full_combination_mode = st.sidebar.toggle(
+    "🔄 Show All Ticket Combinations",
+    help="Includes all mixes (e.g. SDR+CDR, SDR+SDR), not just the cheapest per leg"
+)
+
 # --- 3. THE CALCULATION ENGINE (WITH ROUTING SEGMENTS) ---
 if origin and destination and ticket_filter:
 
@@ -464,32 +469,56 @@ if origin and destination and ticket_filter:
             l1_data = filtered_df[(filtered_df['ORIGIN_CLEAN'].str.upper() == origin.upper()) & (filtered_df['DEST_CLEAN'].str.upper() == split_station.upper())]
             l2_data = filtered_df[(filtered_df['ORIGIN_CLEAN'].str.upper() == split_station.upper()) & (filtered_df['DEST_CLEAN'].str.upper() == destination.upper())]
 
-            if not l1_data.empty and not l2_data.empty:
-                best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
-                best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
-                
-                total_split = best_l1['FARE'] + best_l2['FARE']
-                saving = direct_fare - total_split
+            if full_combination_mode:
+    for _, l1 in l1_data.iterrows():
+        for _, l2 in l2_data.iterrows():
 
-                if saving > 0.01:
-                    leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
-                    leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
-                    
-                    results.append({
-                        "Split At": split_station,
-                        "Leg 1": leg1_label,
-                        "Leg 2": leg2_label,
-                        "Total Price": f"£{total_split:.2f}",
-                        "Saving": f"£{saving:.2f}",
-                        "RawSaving": saving
-                    })
+            total_split = l1['FARE'] + l2['FARE']
+            saving = direct_fare - total_split
+
+            if saving > 0.01:
+                leg1_label = f"£{l1['FARE']:.2f} ({l1['TICKET_TYPE_DESCRIPTION']}/{l1['TICKET_CODE']})"
+                leg2_label = f"£{l2['FARE']:.2f} ({l2['TICKET_TYPE_DESCRIPTION']}/{l2['TICKET_CODE']})"
+
+                results.append({
+                    "Split At": split_station,
+                    "Leg 1": leg1_label,
+                    "Leg 2": leg2_label,
+                    "Total Price": f"£{total_split:.2f}",
+                    "Saving": f"£{saving:.2f}",
+                    "RawSaving": saving
+                })
+
+else:
+    best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
+    best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
+
+    total_split = best_l1['FARE'] + best_l2['FARE']
+    saving = direct_fare - total_split
+
+    if saving > 0.01:
+        leg1_label = f"£{best_l1['FARE']:.2f} ({best_l1['TICKET_TYPE_DESCRIPTION']}/{best_l1['TICKET_CODE']})"
+        leg2_label = f"£{best_l2['FARE']:.2f} ({best_l2['TICKET_TYPE_DESCRIPTION']}/{best_l2['TICKET_CODE']})"
+
+        results.append({
+            "Split At": split_station,
+            "Leg 1": leg1_label,
+            "Leg 2": leg2_label,
+            "Total Price": f"£{total_split:.2f}",
+            "Saving": f"£{saving:.2f}",
+            "RawSaving": saving
+        })
 
         if results:
-            results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
-            st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
-            st.success(f"Found {len(results)} split opportunities :(")
-        else:
-            st.info("No Split-Ticketing Opportunities Found :)")
+    results_df = pd.DataFrame(results).sort_values("RawSaving", ascending=False)
+
+    if full_combination_mode:
+        results_df = results_df.drop_duplicates(subset=["Split At", "Leg 1", "Leg 2"])
+
+    st.dataframe(results_df.drop(columns=["RawSaving"]), use_container_width=True, hide_index=True)
+    st.success(f"Found {len(results_df)} split opportunities")
+else:
+    st.info("No Split-Ticketing Opportunities Found :)")
             
 # --- 4. DATA TABLE VIEW ---
 with st.expander("View Raw Fare Data"):
