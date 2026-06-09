@@ -131,8 +131,8 @@ else:
 ticket_filter = [label.split(" (")[1].replace(")", "") for label in selected_labels]
 
 full_combination_mode = st.sidebar.toggle(
-    "🔄 Show All Ticket Combinations",
-    help="Includes all mixes (e.g. SDR+CDR, SDR+SDR), not just the cheapest per leg"
+    "Show All Ticket Combinations",
+    help="Includes all product mixes (e.g. SDR+CDR, SDR+SDR), not just the cheapest per leg"
 )
 
 # --- 3. THE CALCULATION ENGINE (WITH ROUTING SEGMENTS) ---
