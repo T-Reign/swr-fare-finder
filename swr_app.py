@@ -490,6 +490,9 @@ if origin and destination and ticket_filter:
                             })
 
             else:
+                if l1_data.empty or l2_data.empty:
+                    continue
+
                 best_l1 = l1_data.loc[l1_data['FARE'].idxmin()]
                 best_l2 = l2_data.loc[l2_data['FARE'].idxmin()]
 
